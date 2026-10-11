@@ -1,13 +1,20 @@
 import { CATEGORIAS, PRIORIDADES } from "../constants/chamados.js";
-import { salvarChamado } from "./chamadosDados.js";
+import * as chamadosDados from "./chamadosDados.js";
 
-/** Valida e salva um novo chamado; os campos de sistema são gerados aqui. */
+export async function listarChamados() {
+  return chamadosDados.listarChamados();
+}
+
+export async function buscarChamadoPorId(id) {
+  return chamadosDados.buscarChamadoPorId(id);
+}
+
 export async function criarChamado(dados) {
   validarChamado(dados);
 
   const agora = new Date();
   const instante = agora.toISOString();
-  // A interface espera uma data de calendário local no formato AAAA-MM-DD.
+  // O Frontend usa AAAA-MM-DD. Usamos a data local para evitar mudança de dia em UTC.
   const dataAbertura = [
     agora.getFullYear(),
     String(agora.getMonth() + 1).padStart(2, "0"),
@@ -26,7 +33,7 @@ export async function criarChamado(dados) {
     dataAtualizacao: instante,
   };
 
-  return await salvarChamado(chamado);
+  return chamadosDados.salvarChamado(chamado);
 }
 
 export function validarChamado(dados) {
