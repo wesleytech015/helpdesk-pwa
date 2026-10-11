@@ -1,0 +1,302 @@
+
+/* ========================================
+   CONFIGURAÇÕES GERAIS
+======================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f7f8fa;
+  color: #1f2937;
+  font-family: Arial, sans-serif;
+}
+
+/* ========================================
+   MENU SUPERIOR
+======================================== */
+
+.menu-superior {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.menu-conteudo {
+  max-width: 1200px;
+  margin: auto;
+  padding: 18px 24px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: #2563eb;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.navegacao {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.navegacao a {
+  color: #4b5563;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.navegacao a:hover {
+  color: #2563eb;
+}
+
+.navegacao a.active {
+  color: #2563eb;
+  font-weight: bold;
+}
+
+/* ========================================
+   CONTEÚDO DAS PÁGINAS
+======================================== */
+
+.conteudo {
+  max-width: 1200px;
+  margin: 35px auto;
+  padding: 0 24px;
+}
+
+h1 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  font-size: 28px;
+}
+
+.subtitulo {
+  margin-top: 0;
+  color: #6b7280;
+}
+
+/* ========================================
+   FILTROS DO DASHBOARD
+======================================== */
+
+.filtros {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 28px 0;
+}
+
+select {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+}
+
+/* ========================================
+   INDICADORES DO DASHBOARD
+======================================== */
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card-indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  padding: 22px;
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.card-indicador span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.card-indicador strong {
+  font-size: 30px;
+}
+
+/* Cores dos indicadores */
+
+.azul {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.amarelo {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.roxo {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.verde {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ========================================
+   TABELA DO DASHBOARD
+======================================== */
+
+.secao-chamados {
+  margin-top: 28px;
+  padding: 20px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.secao-chamados h2 {
+  margin-top: 8px;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.tabela-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th,
+td {
+  padding: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+th {
+  background: #f9fafb;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.sem-dados {
+  padding: 25px;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* ========================================
+   LINKS DOS PROTOCOLOS NO DASHBOARD
+======================================== */
+
+.secao-chamados .link-protocolo {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.secao-chamados .link-protocolo:hover {
+  text-decoration: underline;
+}
+
+.secao-chamados .link-protocolo:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ========================================
+   ACESSIBILIDADE
+======================================== */
+
+.navegacao a:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+/* ========================================
+   RESPONSIVIDADE - TABLETS
+======================================== */
+
+@media (max-width: 768px) {
+  .menu-conteudo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navegacao {
+    gap: 14px;
+  }
+
+  .conteudo {
+    margin-top: 24px;
+  }
+
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .secao-chamados {
+    padding: 16px;
+  }
+}
+
+/* ========================================
+   RESPONSIVIDADE - CELULARES
+======================================== */
+
+@media (max-width: 420px) {
+  .menu-conteudo {
+    padding: 16px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .navegacao {
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .conteudo {
+    padding: 0 16px;
+  }
+
+  .indicadores {
+    grid-template-columns: 1fr;
+  }
+
+  .card-indicador {
+    padding: 18px;
+  }
+
+  .secao-chamados {
+    padding: 12px;
+  }
+}

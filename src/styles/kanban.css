@@ -1,0 +1,182 @@
+
+/* Pesquisa */
+.kanban-pesquisa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  height: 44px;
+  padding: 0 14px;
+  margin: 24px 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.kanban-pesquisa input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #1f2937;
+  font: inherit;
+}
+
+/* Quadro principal */
+.kanban-container {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(190px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+
+/* Colunas */
+.kanban-coluna {
+  min-width: 190px;
+  min-height: 350px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f3f4f6;
+}
+
+.kanban-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.kanban-cabecalho h2 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.kanban-cabecalho span {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Lista de cards */
+.kanban-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kanban-card {
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.kanban-protocolo {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.kanban-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.kanban-link:hover {
+  text-decoration: underline;
+}
+
+.kanban-link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.kanban-card h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.kanban-categoria {
+  margin: 0 0 10px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.kanban-vazio {
+  padding: 20px 0;
+  color: #6b7280;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* Prioridades */
+.kanban-prioridade {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kanban-prioridade.prioridade-alto {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.kanban-prioridade.prioridade-normal {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.kanban-prioridade.prioridade-baixo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Cores das colunas por status */
+.kanban-coluna.novo {
+  background: #dbeafe;
+}
+
+.kanban-coluna.aguardando {
+  background: #fef3c7;
+}
+
+.kanban-coluna.dev {
+  background: #ede9fe;
+}
+
+.kanban-coluna.produto {
+  background: #cffafe;
+}
+
+.kanban-coluna.fechado {
+  background: #dcfce7;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .kanban-container {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .kanban-coluna {
+    flex: 0 0 260px;
+    scroll-snap-align: start;
+  }
+}
