@@ -1,0 +1,136 @@
+
+.detalhes-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  margin-bottom: 20px;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.detalhes-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.detalhes-container {
+  margin-top: 24px;
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.detalhes-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  min-width: 0;
+}
+
+.detalhes-campo label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.detalhes-campo p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.detalhes-campo input,
+.detalhes-campo textarea,
+.detalhes-campo select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+}
+
+.detalhes-campo textarea {
+  resize: vertical;
+}
+
+.detalhes-grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+}
+
+.detalhes-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.detalhes-botao,
+.detalhes-cancelar {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.detalhes-botao {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #2563eb;
+}
+
+.detalhes-botao:hover {
+  background: #1d4ed8;
+}
+
+.detalhes-cancelar {
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.detalhes-mensagem {
+  padding: 12px;
+  margin-bottom: 20px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .detalhes-titulo {
+    flex-direction: column;
+  }
+
+  .detalhes-container {
+    padding: 18px;
+  }
+
+  .detalhes-grade {
+    grid-template-columns: 1fr;
+  }
+
+  .detalhes-acoes {
+    flex-direction: column;
+  }
+
+  .detalhes-acoes button {
+    width: 100%;
+  }
+}
