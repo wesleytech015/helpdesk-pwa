@@ -1,8 +1,11 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import MenuSuperior from "./components/MenuSuperior";
 import Dashboard from "./pages/Dashboard";
+import Chamados from "./pages/Chamados";
 import NovoChamado from "./pages/NovoChamado";
+
 import "./styles/layout.css";
 
 function PaginaPendente({ titulo }) {
@@ -22,10 +25,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
 
-        <Route
-          path="/chamados"
-          element={<PaginaPendente titulo="Chamados" />}
-        />
+        <Route path="/chamados" element={<Chamados />} />
 
         <Route
           path="/kanban"
