@@ -7,64 +7,135 @@
   box-sizing: border-box;
 }
 
+/*
+  Reserva espaço para a barra de rolagem.
+  Evita deslocamentos horizontais ao navegar
+  entre páginas com alturas diferentes.
+*/
+
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
-  background: #f7f8fa;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f8fafc;
   color: #1f2937;
-  font-family: Arial, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* ========================================
-   MENU SUPERIOR
+   MENU SUPERIOR - IDENTIDADE HELPDESK
 ======================================== */
 
 .menu-superior {
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  width: 100%;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
+
+/* Estrutura do menu */
 
 .menu-conteudo {
-  max-width: 1200px;
-  margin: auto;
-  padding: 18px 24px;
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  padding: 14px 32px 14px 24px;
 
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 24px;
 }
+
+/* ========================================
+   LOGO HELPDESK
+======================================== */
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
+  flex-shrink: 0;
 
-  color: #2563eb;
-  font-size: 22px;
-  font-weight: bold;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
 }
+
+.logo span {
+  color: #ffffff;
+}
+
+.logo svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+/* ========================================
+   NAVEGAÇÃO PRINCIPAL
+======================================== */
 
 .navegacao {
   display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: flex-end;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 .navegacao a {
-  color: #4b5563;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 44px;
+  padding: 11px 17px;
+  border-radius: 8px;
+
+  color: #f1f5f9;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 }
+
+/* Efeito ao passar o mouse */
 
 .navegacao a:hover {
-  color: #2563eb;
+  background: #374151;
+  color: #ffffff;
 }
 
+/* Página selecionada */
+
 .navegacao a.active {
-  color: #2563eb;
-  font-weight: bold;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.navegacao a.active:hover {
+  background: #1d4ed8;
+}
+
+/* Navegação por teclado */
+
+.navegacao a:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 3px;
 }
 
 /* ========================================
@@ -72,24 +143,26 @@ body {
 ======================================== */
 
 .conteudo {
+  width: 100%;
   max-width: 1200px;
-  margin: 35px auto;
+  margin: 28px auto;
   padding: 0 24px;
 }
 
 h1 {
   margin-top: 0;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   font-size: 28px;
 }
 
 .subtitulo {
   margin-top: 0;
-  color: #6b7280;
+  color: #64748b;
+  font-size: 15px;
 }
 
 /* ========================================
-   FILTROS DO DASHBOARD
+   FILTROS - ESTILOS GERAIS
 ======================================== */
 
 .filtros {
@@ -97,12 +170,12 @@ h1 {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 28px 0;
+  margin: 24px 0;
 }
 
 select {
   padding: 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
   color: #1f2937;
@@ -110,35 +183,35 @@ select {
 }
 
 /* ========================================
-   INDICADORES DO DASHBOARD
+   INDICADORES - ESTILOS BASE
 ======================================== */
 
 .indicadores {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .card-indicador {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-
-  padding: 22px;
-  border-radius: 12px;
   min-width: 0;
+  padding: 18px;
+  border-radius: 10px;
 }
 
 .card-indicador span {
   font-size: 14px;
-  font-weight: 600;
 }
 
 .card-indicador strong {
   font-size: 30px;
+  font-weight: 800;
 }
 
-/* Cores dos indicadores */
+/* ========================================
+   CORES GERAIS DE COMPATIBILIDADE
+======================================== */
 
 .azul {
   background: #dbeafe;
@@ -161,21 +234,18 @@ select {
 }
 
 /* ========================================
-   TABELA DO DASHBOARD
+   TABELAS E PAINÉIS
 ======================================== */
 
 .secao-chamados {
-  margin-top: 28px;
+  margin-top: 24px;
   padding: 20px;
-
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
 }
 
 .secao-chamados h2 {
-  margin-top: 8px;
-  margin-bottom: 16px;
   font-size: 18px;
 }
 
@@ -192,51 +262,40 @@ table {
 
 th,
 td {
-  padding: 14px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 13px;
+  border-bottom: 1px solid #e2e8f0;
   font-size: 14px;
 }
 
 th {
-  background: #f9fafb;
-  color: #4b5563;
+  background: #f8fafc;
+  color: #475569;
   font-weight: 600;
 }
 
 .sem-dados {
-  padding: 25px;
+  padding: 24px;
   text-align: center;
-  color: #6b7280;
+  color: #64748b;
 }
 
 /* ========================================
-   LINKS DOS PROTOCOLOS NO DASHBOARD
+   LINKS DOS PROTOCOLOS
 ======================================== */
 
-.secao-chamados .link-protocolo {
+.link-protocolo {
   color: #2563eb;
-  text-decoration: none;
   font-weight: 600;
+  text-decoration: none;
 }
 
-.secao-chamados .link-protocolo:hover {
+.link-protocolo:hover {
   text-decoration: underline;
 }
 
-.secao-chamados .link-protocolo:focus-visible {
+.link-protocolo:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 3px;
-  border-radius: 2px;
-}
-
-/* ========================================
-   ACESSIBILIDADE
-======================================== */
-
-.navegacao a:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 4px;
-  border-radius: 3px;
 }
 
 /* ========================================
@@ -247,22 +306,38 @@ th {
   .menu-conteudo {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .logo {
+    font-size: 22px;
+  }
+
+  .logo svg {
+    width: 26px;
+    height: 26px;
   }
 
   .navegacao {
-    gap: 14px;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .navegacao a {
+    min-height: 40px;
+    padding: 10px 13px;
+    font-size: 14px;
   }
 
   .conteudo {
-    margin-top: 24px;
+    margin-top: 22px;
+    padding: 0 16px;
   }
 
   .indicadores {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .secao-chamados {
-    padding: 16px;
   }
 }
 
@@ -270,33 +345,36 @@ th {
    RESPONSIVIDADE - CELULARES
 ======================================== */
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .menu-conteudo {
-    padding: 16px;
+    padding: 12px 14px;
   }
 
   .logo {
-    font-size: 20px;
+    font-size: 21px;
+  }
+
+  .logo svg {
+    width: 25px;
+    height: 25px;
   }
 
   .navegacao {
-    gap: 10px;
-    font-size: 13px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 7px;
   }
 
-  .conteudo {
-    padding: 0 16px;
+  .navegacao a {
+    min-width: 0;
+    min-height: 42px;
+    padding: 10px 6px;
+    text-align: center;
+    font-size: 13px;
   }
 
   .indicadores {
     grid-template-columns: 1fr;
-  }
-
-  .card-indicador {
-    padding: 18px;
-  }
-
-  .secao-chamados {
-    padding: 12px;
   }
 }
