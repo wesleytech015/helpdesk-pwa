@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Chamados from "./pages/Chamados";
 import NovoChamado from "./pages/NovoChamado";
 import Kanban from "./pages/Kanban";
+import DetalhesChamado from "./pages/DetalhesChamado";
 
 import "./styles/layout.css";
 
@@ -17,6 +18,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/chamados" element={<Chamados />} />
+        <Route
+          path="/chamados/:id"
+          element={<DetalhesChamado />}
+        />
         <Route path="/kanban" element={<Kanban />} />
         <Route
           path="/novo-chamado"

@@ -1,6 +1,8 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Search, RotateCcw } from "lucide-react";
+
 import "../styles/chamados.css";
 
 // Dados fictícios para desenvolver o Frontend
@@ -95,14 +97,19 @@ export default function Chamados() {
   return (
     <main className="conteudo">
       <h1>Todos os Chamados</h1>
+
       <p className="subtitulo">
         Consulte, pesquise e filtre os chamados.
       </p>
 
       <section className="painel-chamados">
+
+        {/* Pesquisa e filtros */}
         <div className="filtros-chamados">
+
           <div className="pesquisa-chamados">
-            <Search size={18} />
+            <Search size={18} aria-hidden="true" />
+
             <input
               type="search"
               aria-label="Pesquisar chamados"
@@ -114,47 +121,60 @@ export default function Chamados() {
 
           <div className="filtro-item">
             <label htmlFor="filtro-status">Status</label>
+
             <select
               id="filtro-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
               <option value="">Todos</option>
+
               {statusDisponiveis.map((item) => (
-                <option key={item} value={item}>{item}</option>
+                <option key={item} value={item}>
+                  {item}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="filtro-item">
             <label htmlFor="filtro-categoria">Categoria</label>
+
             <select
               id="filtro-categoria"
               value={categoria}
               onChange={(e) => setCategoria(e.target.value)}
             >
               <option value="">Todas</option>
+
               {categorias.map((item) => (
-                <option key={item} value={item}>{item}</option>
+                <option key={item} value={item}>
+                  {item}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="filtro-item">
             <label htmlFor="filtro-prioridade">Prioridade</label>
+
             <select
               id="filtro-prioridade"
               value={prioridade}
               onChange={(e) => setPrioridade(e.target.value)}
             >
               <option value="">Todas</option>
+
               {prioridades.map((item) => (
-                <option key={item} value={item}>{item}</option>
+                <option key={item} value={item}>
+                  {item}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
+        {/* Quantidade de resultados e limpeza */}
         <div className="resumo-filtros">
           <span>
             {chamadosFiltrados.length} chamado(s) encontrado(s)
@@ -165,11 +185,12 @@ export default function Chamados() {
             className="limpar-filtros"
             onClick={limparFiltros}
           >
-            <RotateCcw size={15} />
+            <RotateCcw size={15} aria-hidden="true" />
             Limpar filtros
           </button>
         </div>
 
+        {/* Tabela de chamados */}
         <div className="tabela-container">
           <table className="tabela-chamados">
             <thead>
@@ -186,17 +207,31 @@ export default function Chamados() {
             <tbody>
               {chamadosFiltrados.map((chamado) => (
                 <tr key={chamado.id}>
-                  <td>{chamado.id}</td>
-                  <td>{chamado.titulo}</td>
-                  <td>{chamado.categoria}</td>
+
+                  {/* Link para a tela de detalhes */}
                   <td>
-                    <span className={
-                      `prioridade prioridade-${chamado.prioridade.toLowerCase()}`
-                    }>
+                    <Link
+                      to={`/chamados/${chamado.id}`}
+                      className="link-protocolo"
+                    >
+                      {chamado.id}
+                    </Link>
+                  </td>
+
+                  <td>{chamado.titulo}</td>
+
+                  <td>{chamado.categoria}</td>
+
+                  <td>
+                    <span
+                      className={`prioridade prioridade-${chamado.prioridade.toLowerCase()}`}
+                    >
                       {chamado.prioridade}
                     </span>
                   </td>
+
                   <td>{chamado.status}</td>
+
                   <td>{formatarData(chamado.dataAbertura)}</td>
                 </tr>
               ))}
