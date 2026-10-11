@@ -2,53 +2,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, RotateCcw } from "lucide-react";
-
+import { chamadosMock } from "../mocks/chamadosMock";
 import "../styles/chamados.css";
 
-// Dados fictícios para desenvolver o Frontend
-const chamadosExemplo = [
-  {
-    id: "CH-001",
-    titulo: "Erro ao acessar sistema",
-    categoria: "Não Conformidade",
-    prioridade: "Alto",
-    status: "Novo",
-    dataAbertura: "2026-10-02"
-  },
-  {
-    id: "CH-002",
-    titulo: "Dúvida sobre cadastro",
-    categoria: "Dúvida ou Conceito",
-    prioridade: "Normal",
-    status: "Aguardando Retorno do Cliente",
-    dataAbertura: "2026-10-05"
-  },
-  {
-    id: "CH-003",
-    titulo: "Erro na emissão de relatório",
-    categoria: "Não Conformidade",
-    prioridade: "Alto",
-    status: "Encaminhado para o DEV",
-    dataAbertura: "2026-10-07"
-  },
-  {
-    id: "CH-004",
-    titulo: "Melhoria na tela de pesquisa",
-    categoria: "Sugestão de Melhoria",
-    prioridade: "Baixo",
-    status: "Encaminhado para Equipe de Produto",
-    dataAbertura: "2026-09-15"
-  },
-  {
-    id: "CH-005",
-    titulo: "Configuração concluída",
-    categoria: "Dúvida ou Conceito",
-    prioridade: "Normal",
-    status: "Fechado",
-    dataAbertura: "2026-10-08"
-  }
-];
-
+// Status disponíveis
 const statusDisponiveis = [
   "Novo",
   "Aguardando Retorno do Cliente",
@@ -57,12 +14,14 @@ const statusDisponiveis = [
   "Fechado"
 ];
 
+// Categorias disponíveis
 const categorias = [
   "Não Conformidade",
   "Dúvida ou Conceito",
   "Sugestão de Melhoria"
 ];
 
+// Prioridades disponíveis
 const prioridades = ["Baixo", "Normal", "Alto"];
 
 export default function Chamados() {
@@ -71,7 +30,8 @@ export default function Chamados() {
   const [categoria, setCategoria] = useState("");
   const [prioridade, setPrioridade] = useState("");
 
-  const chamadosFiltrados = chamadosExemplo.filter((chamado) => {
+  // Filtra os dados importados do arquivo centralizado
+  const chamadosFiltrados = chamadosMock.filter((chamado) => {
     const texto = `${chamado.id} ${chamado.titulo}`.toLowerCase();
 
     return (
@@ -106,7 +66,6 @@ export default function Chamados() {
 
         {/* Pesquisa e filtros */}
         <div className="filtros-chamados">
-
           <div className="pesquisa-chamados">
             <Search size={18} aria-hidden="true" />
 
@@ -121,14 +80,12 @@ export default function Chamados() {
 
           <div className="filtro-item">
             <label htmlFor="filtro-status">Status</label>
-
             <select
               id="filtro-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
               <option value="">Todos</option>
-
               {statusDisponiveis.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -139,14 +96,12 @@ export default function Chamados() {
 
           <div className="filtro-item">
             <label htmlFor="filtro-categoria">Categoria</label>
-
             <select
               id="filtro-categoria"
               value={categoria}
               onChange={(e) => setCategoria(e.target.value)}
             >
               <option value="">Todas</option>
-
               {categorias.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -157,14 +112,12 @@ export default function Chamados() {
 
           <div className="filtro-item">
             <label htmlFor="filtro-prioridade">Prioridade</label>
-
             <select
               id="filtro-prioridade"
               value={prioridade}
               onChange={(e) => setPrioridade(e.target.value)}
             >
               <option value="">Todas</option>
-
               {prioridades.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -174,7 +127,7 @@ export default function Chamados() {
           </div>
         </div>
 
-        {/* Quantidade de resultados e limpeza */}
+        {/* Quantidade de resultados */}
         <div className="resumo-filtros">
           <span>
             {chamadosFiltrados.length} chamado(s) encontrado(s)
@@ -190,7 +143,7 @@ export default function Chamados() {
           </button>
         </div>
 
-        {/* Tabela de chamados */}
+        {/* Listagem de chamados */}
         <div className="tabela-container">
           <table className="tabela-chamados">
             <thead>
@@ -207,8 +160,6 @@ export default function Chamados() {
             <tbody>
               {chamadosFiltrados.map((chamado) => (
                 <tr key={chamado.id}>
-
-                  {/* Link para a tela de detalhes */}
                   <td>
                     <Link
                       to={`/chamados/${chamado.id}`}
@@ -246,6 +197,7 @@ export default function Chamados() {
             </tbody>
           </table>
         </div>
+
       </section>
     </main>
   );
