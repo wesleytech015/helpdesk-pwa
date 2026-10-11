@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Pencil, Save, X } from "lucide-react";
+
+import { chamadosMock } from "../mocks/chamadosMock";
 import "../styles/detalhesChamado.css";
 
 const categorias = [
@@ -20,80 +22,39 @@ const statusDisponiveis = [
   "Fechado"
 ];
 
-// Dados simulados. Serão substituídos posteriormente.
-const chamadosExemplo = [
-  {
-    id: "CH-001",
-    titulo: "Erro ao acessar sistema",
-    descricao: "Ao tentar acessar o sistema, é apresentado um erro de autenticação.",
-    categoria: "Não Conformidade",
-    prioridade: "Alto",
-    status: "Novo",
-    dataAbertura: "2026-10-02"
-  },
-  {
-    id: "CH-002",
-    titulo: "Dúvida sobre cadastro",
-    descricao: "Preciso de orientação para realizar o cadastro.",
-    categoria: "Dúvida ou Conceito",
-    prioridade: "Normal",
-    status: "Aguardando Retorno do Cliente",
-    dataAbertura: "2026-10-05"
-  },
-  {
-    id: "CH-003",
-    titulo: "Erro na emissão de relatório",
-    descricao: "O sistema apresenta um erro ao emitir o relatório.",
-    categoria: "Não Conformidade",
-    prioridade: "Alto",
-    status: "Encaminhado para o DEV",
-    dataAbertura: "2026-10-07"
-  },
-  {
-    id: "CH-004",
-    titulo: "Melhoria na tela de pesquisa",
-    descricao: "Sugestão para melhorar os filtros de pesquisa.",
-    categoria: "Sugestão de Melhoria",
-    prioridade: "Baixo",
-    status: "Encaminhado para Equipe de Produto",
-    dataAbertura: "2026-09-15"
-  },
-  {
-    id: "CH-005",
-    titulo: "Configuração concluída",
-    descricao: "A configuração solicitada foi finalizada.",
-    categoria: "Dúvida ou Conceito",
-    prioridade: "Normal",
-    status: "Fechado",
-    dataAbertura: "2026-10-08"
-  }
-];
-
 export default function DetalhesChamado() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const chamadoInicial = chamadosExemplo.find(
-    (chamado) => chamado.id === id
+  // Busca o chamado nos dados centralizados.
+  const chamadoInicial = chamadosMock.find(
+    (item) => item.id === id
   );
 
+  // Mantém uma cópia local para a edição temporária.
   const [chamado, setChamado] = useState(
     chamadoInicial ? { ...chamadoInicial } : null
   );
+
   const [formulario, setFormulario] = useState(
     chamadoInicial ? { ...chamadoInicial } : null
   );
+
   const [editando, setEditando] = useState(false);
   const [mensagem, setMensagem] = useState("");
 
-  if (!chamado || !formulario) {
+  // Caso o protocolo informado não exista.
+  if (!chamado || !formulario || chamado.id !== id) {
     return (
       <main className="conteudo">
         <h1>Chamado não encontrado</h1>
+
         <p className="subtitulo">
           Não foi encontrado um chamado com esse número.
         </p>
+
         <button
+          type="button"
           className="detalhes-botao"
           onClick={() => navigate("/chamados")}
         >
@@ -103,6 +64,7 @@ export default function DetalhesChamado() {
     );
   }
 
+  // Atualiza os campos do formulário.
   function alterarCampo(evento) {
     const { name, value } = evento.target;
 
@@ -112,6 +74,7 @@ export default function DetalhesChamado() {
     }));
   }
 
+  // Simula o salvamento das alterações.
   function salvarAlteracoes(evento) {
     evento.preventDefault();
 
@@ -123,14 +86,16 @@ export default function DetalhesChamado() {
       return;
     }
 
-    // Atualização temporária apenas no estado React.
+    // Atualiza apenas o estado local do React.
     setChamado({ ...formulario });
     setEditando(false);
+
     setMensagem(
       "Alterações aplicadas temporariamente. Ainda não foram gravadas no banco."
     );
   }
 
+  // Descarta as alterações não aplicadas.
   function cancelarEdicao() {
     setFormulario({ ...chamado });
     setEditando(false);
@@ -144,7 +109,9 @@ export default function DetalhesChamado() {
 
   return (
     <main className="conteudo">
+      {/* Retornar para a listagem */}
       <button
+        type="button"
         className="detalhes-voltar"
         onClick={() => navigate("/chamados")}
       >
@@ -152,9 +119,13 @@ export default function DetalhesChamado() {
         Voltar para chamados
       </button>
 
+      {/* Título e botão de edição */}
       <div className="detalhes-titulo">
         <div>
-          <h1>{chamado.id} - {chamado.titulo}</h1>
+          <h1>
+            {chamado.id} - {chamado.titulo}
+          </h1>
+
           <p className="subtitulo">
             Informações do chamado
           </p>
@@ -162,6 +133,7 @@ export default function DetalhesChamado() {
 
         {!editando && (
           <button
+            type="button"
             className="detalhes-botao"
             onClick={() => {
               setFormulario({ ...chamado });
@@ -175,10 +147,16 @@ export default function DetalhesChamado() {
         )}
       </div>
 
+      {/* Informações do chamado */}
       <section className="detalhes-container">
         <form onSubmit={salvarAlteracoes}>
+
+          {/* Título */}
           <div className="detalhes-campo">
-            <label htmlFor="det-titulo">Título *</label>
+            <label htmlFor="det-titulo">
+              Título *
+            </label>
+
             {editando ? (
               <input
                 id="det-titulo"
@@ -192,8 +170,12 @@ export default function DetalhesChamado() {
             )}
           </div>
 
+          {/* Descrição */}
           <div className="detalhes-campo">
-            <label htmlFor="det-descricao">Descrição *</label>
+            <label htmlFor="det-descricao">
+              Descrição *
+            </label>
+
             {editando ? (
               <textarea
                 id="det-descricao"
@@ -209,8 +191,13 @@ export default function DetalhesChamado() {
           </div>
 
           <div className="detalhes-grade">
+
+            {/* Categoria */}
             <div className="detalhes-campo">
-              <label htmlFor="det-categoria">Categoria</label>
+              <label htmlFor="det-categoria">
+                Categoria
+              </label>
+
               {editando ? (
                 <select
                   id="det-categoria"
@@ -219,7 +206,9 @@ export default function DetalhesChamado() {
                   onChange={alterarCampo}
                 >
                   {categorias.map((item) => (
-                    <option key={item}>{item}</option>
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -227,8 +216,12 @@ export default function DetalhesChamado() {
               )}
             </div>
 
+            {/* Prioridade */}
             <div className="detalhes-campo">
-              <label htmlFor="det-prioridade">Prioridade</label>
+              <label htmlFor="det-prioridade">
+                Prioridade
+              </label>
+
               {editando ? (
                 <select
                   id="det-prioridade"
@@ -237,7 +230,9 @@ export default function DetalhesChamado() {
                   onChange={alterarCampo}
                 >
                   {prioridades.map((item) => (
-                    <option key={item}>{item}</option>
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -245,8 +240,12 @@ export default function DetalhesChamado() {
               )}
             </div>
 
+            {/* Status */}
             <div className="detalhes-campo">
-              <label htmlFor="det-status">Status</label>
+              <label htmlFor="det-status">
+                Status
+              </label>
+
               {editando ? (
                 <select
                   id="det-status"
@@ -255,7 +254,9 @@ export default function DetalhesChamado() {
                   onChange={alterarCampo}
                 >
                   {statusDisponiveis.map((item) => (
-                    <option key={item}>{item}</option>
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -263,20 +264,30 @@ export default function DetalhesChamado() {
               )}
             </div>
 
+            {/* Data de abertura */}
             <div className="detalhes-campo">
               <label>Data de abertura</label>
-              <p>{formatarData(chamado.dataAbertura)}</p>
+
+              <p>
+                {formatarData(chamado.dataAbertura)}
+              </p>
             </div>
           </div>
 
+          {/* Mensagem de confirmação */}
           {mensagem && (
-            <p className="detalhes-mensagem" role="status">
+            <p
+              className="detalhes-mensagem"
+              role="status"
+            >
               {mensagem}
             </p>
           )}
 
+          {/* Botões de edição */}
           {editando && (
             <div className="detalhes-acoes">
+
               <button
                 type="button"
                 className="detalhes-cancelar"
@@ -286,7 +297,10 @@ export default function DetalhesChamado() {
                 Cancelar
               </button>
 
-              <button type="submit" className="detalhes-botao">
+              <button
+                type="submit"
+                className="detalhes-botao"
+              >
                 <Save size={16} />
                 Aplicar alterações
               </button>
