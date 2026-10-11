@@ -9,6 +9,52 @@ export async function buscarChamadoPorId(id) {
   return chamadosDados.buscarChamadoPorId(id);
 }
 
+export async function atualizarChamado(id, dados) {
+  if (!dados || typeof dados !== "object" || Array.isArray(dados)) {
+    throw new Error("Os dados do chamado devem ser um objeto.");
+  }
+
+  const camposEditaveis = [
+    "titulo",
+    "descricao",
+    "categoria",
+    "prioridade",
+  ];
+
+  for (const campo of Object.keys(dados)) {
+    if (!camposEditaveis.includes(campo)) {
+      throw new Error(
+        `O campo ${campo} não pode ser alterado nesta operação.`
+      );
+    }
+  }
+
+  const atual = await chamadosDados.buscarChamadoPorId(id);
+
+  if (!atual) {
+    throw new Error("Chamado não encontrado.");
+  }
+
+  const atualizado = { ...atual, ...dados };
+
+  validarChamado(atualizado);
+
+  atualizado.titulo = atualizado.titulo.trim();
+  atualizado.descricao = atualizado.descricao.trim();
+
+  const mudou = camposEditaveis.some(
+    (campo) => atualizado[campo] !== atual[campo]
+  );
+
+  if (!mudou) {
+    return atual;
+  }
+
+  atualizado.dataAtualizacao = new Date().toISOString();
+
+  return chamadosDados.atualizarChamado(atualizado);
+}
+
 export async function criarChamado(dados) {
   validarChamado(dados);
 
