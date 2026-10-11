@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { criarChamado } from "../services/chamadosService.js";
 import "../styles/novoChamado.css";
 
 const formularioInicial = {
@@ -12,6 +13,7 @@ const formularioInicial = {
 export default function NovoChamado() {
   const [formulario, setFormulario] = useState(formularioInicial);
   const [mensagem, setMensagem] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   function atualizarCampo(evento) {
     const { name, value } = evento.target;
@@ -24,8 +26,10 @@ export default function NovoChamado() {
     setMensagem("");
   }
 
-  function enviarFormulario(evento) {
+  async function enviarFormulario(evento) {
     evento.preventDefault();
+
+    if (salvando) return;
 
     if (
       !formulario.titulo.trim() ||
@@ -36,15 +40,18 @@ export default function NovoChamado() {
       return;
     }
 
-    // Temporário: integração com os serviços virá depois.
-    console.log("Chamado simulado:", {
-      ...formulario,
-      status: "Novo"
-    });
+    setSalvando(true);
+    setMensagem("");
 
-    setMensagem(
-      "Formulário validado! O salvamento será integrado posteriormente."
-    );
+    try {
+      await criarChamado(formulario);
+      setFormulario(formularioInicial);
+      setMensagem("Chamado criado! Nesta etapa, os dados são temporários e se perdem ao recarregar.");
+    } catch (erro) {
+      setMensagem(erro instanceof Error ? erro.message : "Não foi possível criar o chamado. Tente novamente.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   function limparFormulario() {
@@ -60,7 +67,7 @@ export default function NovoChamado() {
       </p>
 
       <section className="formulario-container">
-        <form onSubmit={enviarFormulario}>
+        <form onSubmit={enviarFormulario} aria-busy={salvando}>
           <div className="campo-formulario">
             <label htmlFor="titulo">Título *</label>
             <input
@@ -71,6 +78,7 @@ export default function NovoChamado() {
               onChange={atualizarCampo}
               placeholder="Informe o assunto do chamado"
               maxLength={120}
+              disabled={salvando}
               required
             />
           </div>
@@ -84,6 +92,7 @@ export default function NovoChamado() {
               onChange={atualizarCampo}
               placeholder="Descreva o problema ou a solicitação"
               rows={5}
+              disabled={salvando}
               required
             />
           </div>
@@ -96,6 +105,7 @@ export default function NovoChamado() {
                 name="categoria"
                 value={formulario.categoria}
                 onChange={atualizarCampo}
+                disabled={salvando}
                 required
               >
                 <option value="">Selecione a categoria</option>
@@ -118,6 +128,7 @@ export default function NovoChamado() {
                 name="prioridade"
                 value={formulario.prioridade}
                 onChange={atualizarCampo}
+                disabled={salvando}
                 required
               >
                 <option value="Baixo">Baixo</option>
@@ -142,12 +153,13 @@ export default function NovoChamado() {
               type="button"
               className="botao-cancelar"
               onClick={limparFormulario}
+              disabled={salvando}
             >
               Limpar
             </button>
 
-            <button type="submit" className="botao-salvar">
-              Validar Chamado
+            <button type="submit" className="botao-salvar" disabled={salvando}>
+              {salvando ? "Salvando..." : "Criar Chamado"}
             </button>
           </div>
         </form>
