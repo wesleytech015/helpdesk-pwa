@@ -1,4 +1,33 @@
 import { CATEGORIAS, PRIORIDADES } from "../constants/chamados.js";
+import { salvarChamado } from "./chamadosDados.js";
+
+/** Valida e salva um novo chamado; os campos de sistema são gerados aqui. */
+export async function criarChamado(dados) {
+  validarChamado(dados);
+
+  const agora = new Date();
+  const instante = agora.toISOString();
+  // A interface espera uma data de calendário local no formato AAAA-MM-DD.
+  const dataAbertura = [
+    agora.getFullYear(),
+    String(agora.getMonth() + 1).padStart(2, "0"),
+    String(agora.getDate()).padStart(2, "0"),
+  ].join("-");
+
+  const chamado = {
+    id: globalThis.crypto.randomUUID(),
+    titulo: dados.titulo.trim(),
+    descricao: dados.descricao.trim(),
+    categoria: dados.categoria,
+    prioridade: dados.prioridade,
+    status: "Novo",
+    dataAbertura,
+    dataCriacao: instante,
+    dataAtualizacao: instante,
+  };
+
+  return await salvarChamado(chamado);
+}
 
 export function validarChamado(dados) {
   if (!dados || typeof dados !== "object" || Array.isArray(dados)) {
