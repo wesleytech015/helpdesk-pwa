@@ -1,15 +1,11 @@
 export const CATEGORIAS = [
-  "SISTEMA",
-  "HARDWARE",
-  "REDE",
-  "IMPRESSAO",
-  "FISCAL",
-  "OUTRO",
+  "Não Conformidade",
+  "Dúvida ou Conceito",
+  "Sugestão de Melhoria",
 ];
 
 export const PRIORIDADES = [
-  "BAIXA",
-  "MEDIA",
-  "ALTA",
-  "URGENTE",
+  "Baixo",
+  "Normal",
+  "Alto",
 ];
