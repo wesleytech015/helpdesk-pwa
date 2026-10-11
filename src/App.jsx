@@ -5,17 +5,9 @@ import MenuSuperior from "./components/MenuSuperior";
 import Dashboard from "./pages/Dashboard";
 import Chamados from "./pages/Chamados";
 import NovoChamado from "./pages/NovoChamado";
+import Kanban from "./pages/Kanban";
 
 import "./styles/layout.css";
-
-function PaginaPendente({ titulo }) {
-  return (
-    <main className="conteudo">
-      <h1>{titulo}</h1>
-      <p className="subtitulo">Tela em desenvolvimento.</p>
-    </main>
-  );
-}
 
 export default function App() {
   return (
@@ -24,14 +16,8 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<Dashboard />} />
-
         <Route path="/chamados" element={<Chamados />} />
-
-        <Route
-          path="/kanban"
-          element={<PaginaPendente titulo="Kanban" />}
-        />
-
+        <Route path="/kanban" element={<Kanban />} />
         <Route
           path="/novo-chamado"
           element={<NovoChamado />}
