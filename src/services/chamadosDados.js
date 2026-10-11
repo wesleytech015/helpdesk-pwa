@@ -26,6 +26,20 @@ export async function listarChamados() {
   return structuredClone(Array.from(chamados.values()));
 }
 
+export async function atualizarChamado(chamado) {
+  if (!chamado || typeof chamado !== "object" || Array.isArray(chamado)) {
+    throw new Error("Os dados do chamado devem ser um objeto.");
+  }
+  validarId(chamado.id);
+  if (!chamados.has(chamado.id)) {
+    throw new Error("Chamado não encontrado.");
+  }
+
+  const registro = structuredClone(chamado);
+  chamados.set(registro.id, registro);
+  return structuredClone(registro);
+}
+
 export async function buscarChamadoPorId(id) {
   validarId(id);
   const chamado = chamados.get(id);
