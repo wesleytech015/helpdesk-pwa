@@ -1,4 +1,4 @@
-import { CATEGORIAS, PRIORIDADES } from "../constants/chamados.js";
+import { CATEGORIAS, PRIORIDADES, STATUS_CHAMADO } from "../constants/chamados.js";
 import * as chamadosDados from "./chamadosDados.js";
 
 export async function listarChamados() {
@@ -19,6 +19,8 @@ export async function atualizarChamado(id, dados) {
     "descricao",
     "categoria",
     "prioridade",
+    "status",
+    "responsavelId",
   ];
 
   for (const campo of Object.keys(dados)) {
@@ -39,6 +41,21 @@ export async function atualizarChamado(id, dados) {
 
   validarChamado(atualizado);
 
+  if (!STATUS_CHAMADO.includes(atualizado.status)) {
+    throw new Error("Selecione um status válido.");
+  }
+
+  if (
+    Object.hasOwn(dados, "responsavelId") &&
+    (typeof dados.responsavelId !== "string" || !dados.responsavelId.trim())
+  ) {
+    throw new Error("Informe um identificador de responsável válido.");
+  }
+
+  if (Object.hasOwn(dados, "responsavelId")) {
+    atualizado.responsavelId = dados.responsavelId.trim();
+  }
+
   atualizado.titulo = atualizado.titulo.trim();
   atualizado.descricao = atualizado.descricao.trim();
 
@@ -53,6 +70,10 @@ export async function atualizarChamado(id, dados) {
   atualizado.dataAtualizacao = new Date().toISOString();
 
   return chamadosDados.atualizarChamado(atualizado);
+}
+
+export async function fecharChamado(id) {
+  return atualizarChamado(id, { status: "Fechado" });
 }
 
 export async function criarChamado(dados) {
@@ -74,6 +95,7 @@ export async function criarChamado(dados) {
     categoria: dados.categoria,
     prioridade: dados.prioridade,
     status: "Novo",
+    responsavelId: "nao-atribuido",
     dataAbertura,
     dataCriacao: instante,
     dataAtualizacao: instante,
