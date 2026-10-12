@@ -1,5 +1,6 @@
-import { CATEGORIAS, PRIORIDADES } from "../constants/chamados.js";
+import { CATEGORIAS, PRIORIDADES, STATUS_CHAMADO } from "../constants/chamados.js";
 import * as chamadosDados from "./chamadosDados.js";
+import { exibirNotificacao } from "./notificacoesService.js";
 
 export async function listarChamados() {
   return chamadosDados.listarChamados();
@@ -19,6 +20,8 @@ export async function atualizarChamado(id, dados) {
     "descricao",
     "categoria",
     "prioridade",
+    "status",
+    "responsavelId",
   ];
 
   for (const campo of Object.keys(dados)) {
@@ -39,6 +42,21 @@ export async function atualizarChamado(id, dados) {
 
   validarChamado(atualizado);
 
+  if (!STATUS_CHAMADO.includes(atualizado.status)) {
+    throw new Error("Selecione um status válido.");
+  }
+
+  if (
+    Object.hasOwn(dados, "responsavelId") &&
+    (typeof dados.responsavelId !== "string" || !dados.responsavelId.trim())
+  ) {
+    throw new Error("Informe um identificador de responsável válido.");
+  }
+
+  if (Object.hasOwn(dados, "responsavelId")) {
+    atualizado.responsavelId = dados.responsavelId.trim();
+  }
+
   atualizado.titulo = atualizado.titulo.trim();
   atualizado.descricao = atualizado.descricao.trim();
 
@@ -52,7 +70,14 @@ export async function atualizarChamado(id, dados) {
 
   atualizado.dataAtualizacao = new Date().toISOString();
 
-  return chamadosDados.atualizarChamado(atualizado);
+  const salvo = await chamadosDados.atualizarChamado(atualizado);
+  const titulo = salvo.status === "Fechado" ? "Chamado fechado" : "Chamado atualizado";
+  await exibirNotificacao(titulo, `${salvo.titulo} (${salvo.status})`, salvo.id);
+  return salvo;
+}
+
+export async function fecharChamado(id) {
+  return atualizarChamado(id, { status: "Fechado" });
 }
 
 export async function criarChamado(dados) {
@@ -74,12 +99,15 @@ export async function criarChamado(dados) {
     categoria: dados.categoria,
     prioridade: dados.prioridade,
     status: "Novo",
+    responsavelId: "nao-atribuido",
     dataAbertura,
     dataCriacao: instante,
     dataAtualizacao: instante,
   };
 
-  return chamadosDados.salvarChamado(chamado);
+  const salvo = await chamadosDados.salvarChamado(chamado);
+  await exibirNotificacao("Chamado criado", salvo.titulo, salvo.id);
+  return salvo;
 }
 
 export function validarChamado(dados) {

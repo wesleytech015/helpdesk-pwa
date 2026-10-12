@@ -1,4 +1,9 @@
 
+import {
+  PRIORIDADES,
+  STATUS_CHAMADO as statusPermitidos,
+} from "../constants/chamados.js";
+
 /**
  * Modelo de dados dos chamados do HelpDesk PWA.
  *
@@ -12,6 +17,11 @@ export const STATUS_CHAMADO = Object.freeze({
   EM_ANDAMENTO: "Em andamento",
   PENDENTE: "Pendente",
   CONCLUIDO: "Concluído",
+  AGUARDANDO_ATENDIMENTO: "Aguardando Atendimento",
+  AGUARDANDO_CLIENTE: "Aguardando Retorno do Cliente",
+  DEV: "Encaminhado para o DEV",
+  PRODUTO: "Encaminhado para Equipe de Produto",
+  FECHADO: "Fechado",
 });
 
 export const PRIORIDADE_CHAMADO = Object.freeze({
@@ -65,25 +75,29 @@ export function validarChamado(chamado) {
     erros.push("O título é obrigatório.");
   }
 
-  if (
-    typeof chamado.descricao !== "string" ||
-    !chamado.descricao.trim()
-  ) {
+  if (typeof chamado.descricao !== "string" || !chamado.descricao.trim()) {
     erros.push("A descrição é obrigatória.");
   }
 
-  if (
-    typeof chamado.categoria !== "string" ||
-    !chamado.categoria.trim()
-  ) {
+  if (typeof chamado.categoria !== "string" || !chamado.categoria.trim()) {
     erros.push("A categoria é obrigatória.");
   }
 
-  if (!Object.values(PRIORIDADE_CHAMADO).includes(chamado.prioridade)) {
+  const prioridadesValidas = new Set([
+    ...PRIORIDADES,
+    ...Object.values(PRIORIDADE_CHAMADO),
+  ]);
+
+  const statusValidos = new Set([
+    ...statusPermitidos,
+    ...Object.values(STATUS_CHAMADO),
+  ]);
+
+  if (!prioridadesValidas.has(chamado.prioridade)) {
     erros.push("A prioridade informada é inválida.");
   }
 
-  if (!Object.values(STATUS_CHAMADO).includes(chamado.status)) {
+  if (!statusValidos.has(chamado.status)) {
     erros.push("O status informado é inválido.");
   }
 

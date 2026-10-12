@@ -14,12 +14,24 @@ const DB_VERSION = 2;
 const STORE_NAME = "chamados";
 
 /**
+ * Cria os índices utilizados pelo banco.
+ */
+function criarIndices(store) {
+  if (!store.indexNames.contains("status")) {
+    store.createIndex("status", "status", { unique: false });
+  }
+
+  if (!store.indexNames.contains("prioridade")) {
+    store.createIndex("prioridade", "prioridade", { unique: false });
+  }
+
+  if (!store.indexNames.contains("dataCriacao")) {
+    store.createIndex("dataCriacao", "dataCriacao", { unique: false });
+  }
+}
+
+/**
  * Abre o banco e prepara a estrutura.
- *
- * A versão 2 permite alterar a chave primária
- * para aceitar UUIDs e IDs numéricos.
- *
- * Atenção: a migração preserva os registros existentes.
  */
 export function abrirBanco() {
   return new Promise((resolve, reject) => {
@@ -34,59 +46,55 @@ export function abrirBanco() {
       const banco = evento.target.result;
       const transacao = evento.target.transaction;
 
-      let store;
-
-      if (banco.objectStoreNames.contains(STORE_NAME)) {
-        store = transacao.objectStore(STORE_NAME);
-
-        // Se a chave anterior era autoIncrement, é necessário
-        // recriar o armazenamento para remover essa propriedade.
-        if (store.autoIncrement || store.keyPath !== "id") {
-          const leitura = store.getAll();
-
-          leitura.onsuccess = () => {
-            const registros = leitura.result;
-
-            banco.deleteObjectStore(STORE_NAME);
-
-            const novoStore = banco.createObjectStore(STORE_NAME, {
-              keyPath: "id",
-            });
-
-            novoStore.createIndex("status", "status", {
-              unique: false,
-            });
-
-            novoStore.createIndex("prioridade", "prioridade", {
-              unique: false,
-            });
-
-            novoStore.createIndex("dataCriacao", "dataCriacao", {
-              unique: false,
-            });
-
-            for (const registro of registros) {
-              novoStore.put(registro);
-            }
-          };
-        }
-      } else {
-        store = banco.createObjectStore(STORE_NAME, {
+      if (!banco.objectStoreNames.contains(STORE_NAME)) {
+        const store = banco.createObjectStore(STORE_NAME, {
           keyPath: "id",
         });
 
-        store.createIndex("status", "status", {
-          unique: false,
-        });
-
-        store.createIndex("prioridade", "prioridade", {
-          unique: false,
-        });
-
-        store.createIndex("dataCriacao", "dataCriacao", {
-          unique: false,
-        });
+        criarIndices(store);
+        return;
       }
+
+      const storeAtual = transacao.objectStore(STORE_NAME);
+
+      if (!storeAtual.autoIncrement && storeAtual.keyPath === "id") {
+        criarIndices(storeAtual);
+        return;
+      }
+
+      /*
+       * Migração do armazenamento antigo.
+       * A leitura e a recriação ocorrem na transação de upgrade.
+       */
+      const leitura = storeAtual.getAll();
+
+      leitura.onsuccess = () => {
+        const registros = leitura.result;
+
+        banco.deleteObjectStore(STORE_NAME);
+
+        const novoStore = banco.createObjectStore(STORE_NAME, {
+          keyPath: "id",
+        });
+
+        criarIndices(novoStore);
+
+        for (const registro of registros) {
+          if (registro.id === undefined || registro.id === null) {
+            continue;
+          }
+
+          novoStore.put(registro);
+        }
+      };
+
+      leitura.onerror = () => {
+        try {
+          transacao.abort();
+        } catch {
+          // A transação pode já estar finalizada.
+        }
+      };
     };
 
     requisicao.onsuccess = () => {
@@ -105,42 +113,38 @@ export function abrirBanco() {
     };
 
     requisicao.onblocked = () => {
-      console.warn("A abertura do banco está bloqueada por outra conexão.");
+      console.warn(
+        "A abertura do banco está bloqueada por outra conexão."
+      );
     };
   });
 }
 
 /**
  * Executa uma operação IndexedDB e fecha a conexão.
- *
- * @param {string} modo
- * @param {(store: IDBObjectStore, transacao: IDBTransaction) => void} operacao
- * @returns {Promise<unknown>}
  */
 async function executarOperacao(modo, operacao) {
   const banco = await abrirBanco();
 
   return new Promise((resolve, reject) => {
-    const transacao = banco.transaction(STORE_NAME, modo);
+    let transacao;
+
+    try {
+      transacao = banco.transaction(STORE_NAME, modo);
+    } catch (erro) {
+      banco.close();
+      reject(erro);
+      return;
+    }
+
     const store = transacao.objectStore(STORE_NAME);
 
     let resultado;
     let erroOperacao;
 
-    try {
-      operacao(store, transacao, (valor) => {
-        resultado = valor;
-      });
-    } catch (erro) {
-      erroOperacao = erro;
-
-      try {
-        transacao.abort();
-      } catch {
-        banco.close();
-        reject(erro);
-      }
-    }
+    const definirResultado = (valor) => {
+      resultado = valor;
+    };
 
     transacao.oncomplete = () => {
       banco.close();
@@ -154,6 +158,7 @@ async function executarOperacao(modo, operacao) {
 
     transacao.onerror = () => {
       banco.close();
+
       reject(
         erroOperacao ??
           transacao.error ??
@@ -163,12 +168,27 @@ async function executarOperacao(modo, operacao) {
 
     transacao.onabort = () => {
       banco.close();
+
       reject(
         erroOperacao ??
+          transacao.__erroAtualizacao ??
           transacao.error ??
           new Error("A operação no banco de dados foi cancelada.")
       );
     };
+
+    try {
+      operacao(store, transacao, definirResultado);
+    } catch (erro) {
+      erroOperacao = erro;
+
+      try {
+        transacao.abort();
+      } catch {
+        banco.close();
+        reject(erro);
+      }
+    }
   });
 }
 
@@ -176,7 +196,7 @@ async function executarOperacao(modo, operacao) {
  * Inclui um chamado.
  *
  * @param {Object} chamado
- * @returns {Promise<string|number>} ID do registro.
+ * @returns {Promise<string|number>}
  */
 export async function adicionarChamado(chamado) {
   if (!chamado || typeof chamado !== "object" || Array.isArray(chamado)) {
@@ -186,7 +206,8 @@ export async function adicionarChamado(chamado) {
   const registro = { ...chamado };
 
   if (
-    (typeof registro.id !== "string" && typeof registro.id !== "number") ||
+    (typeof registro.id !== "string" &&
+      typeof registro.id !== "number") ||
     String(registro.id).trim() === ""
   ) {
     throw new Error("O identificador do chamado é obrigatório.");
@@ -201,10 +222,8 @@ export async function adicionarChamado(chamado) {
   return executarOperacao("readwrite", (store, transacao, definirResultado) => {
     const requisicao = store.add(registro);
 
-    requisicao.onsuccess = () => definirResultado(requisicao.result);
-
-    requisicao.onerror = () => {
-      // O erro será tratado pela transação.
+    requisicao.onsuccess = () => {
+      definirResultado(requisicao.result);
     };
   });
 }
@@ -218,7 +237,9 @@ export async function listarChamados() {
   return executarOperacao("readonly", (store, transacao, definirResultado) => {
     const requisicao = store.getAll();
 
-    requisicao.onsuccess = () => definirResultado(requisicao.result);
+    requisicao.onsuccess = () => {
+      definirResultado(requisicao.result);
+    };
   });
 }
 
@@ -232,7 +253,9 @@ export async function buscarChamadoPorId(id) {
   return executarOperacao("readonly", (store, transacao, definirResultado) => {
     const requisicao = store.get(id);
 
-    requisicao.onsuccess = () => definirResultado(requisicao.result);
+    requisicao.onsuccess = () => {
+      definirResultado(requisicao.result);
+    };
   });
 }
 
@@ -244,6 +267,10 @@ export async function buscarChamadoPorId(id) {
  * @returns {Promise<Object>}
  */
 export async function atualizarChamado(id, dados) {
+  if (!dados || typeof dados !== "object" || Array.isArray(dados)) {
+    throw new Error("Os dados para atualização são inválidos.");
+  }
+
   return executarOperacao("readwrite", (store, transacao, definirResultado) => {
     const requisicao = store.get(id);
 
@@ -251,11 +278,8 @@ export async function atualizarChamado(id, dados) {
       const atual = requisicao.result;
 
       if (!atual) {
-        try {
-          transacao.abort();
-        } catch {
-          // A transação já pode estar finalizada.
-        }
+        transacao.__erroAtualizacao = new Error("Chamado não encontrado.");
+        transacao.abort();
         return;
       }
 
@@ -270,17 +294,16 @@ export async function atualizarChamado(id, dados) {
       const resultado = validarChamado(atualizado);
 
       if (!resultado.valido) {
-        try {
-          transacao.abort();
-        } catch {
-          // A transação já pode estar finalizada.
-        }
+        transacao.__erroAtualizacao = new Error(resultado.erros.join(" "));
+        transacao.abort();
         return;
       }
 
       const gravacao = store.put(atualizado);
 
-      gravacao.onsuccess = () => definirResultado(atualizado);
+      gravacao.onsuccess = () => {
+        definirResultado(atualizado);
+      };
     };
   });
 }
