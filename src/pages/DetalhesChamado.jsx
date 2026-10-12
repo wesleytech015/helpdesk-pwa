@@ -1,56 +1,213 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Pencil, Save, X } from "lucide-react";
 
-import { chamadosMock } from "../mocks/chamadosMock";
+import {
+  buscarChamadoPorId,
+  atualizarChamado,
+} from "../services/chamadosService";
+
 import "../styles/detalhesChamado.css";
 
 const categorias = [
   "Não Conformidade",
   "Dúvida ou Conceito",
-  "Sugestão de Melhoria"
+  "Sugestão de Melhoria",
 ];
 
 const prioridades = ["Baixo", "Normal", "Alto"];
 
 const statusDisponiveis = [
   "Novo",
+  "Aguardando Atendimento",
   "Aguardando Retorno do Cliente",
   "Encaminhado para o DEV",
   "Encaminhado para Equipe de Produto",
-  "Fechado"
+  "Fechado",
 ];
 
 export default function DetalhesChamado() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Busca o chamado nos dados centralizados.
-  const chamadoInicial = chamadosMock.find(
-    (item) => item.id === id
-  );
+  const [chamado, setChamado] = useState(null);
+  const [formulario, setFormulario] = useState(null);
 
-  // Mantém uma cópia local para a edição temporária.
-  const [chamado, setChamado] = useState(
-    chamadoInicial ? { ...chamadoInicial } : null
-  );
-
-  const [formulario, setFormulario] = useState(
-    chamadoInicial ? { ...chamadoInicial } : null
-  );
-
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [editando, setEditando] = useState(false);
-  const [mensagem, setMensagem] = useState("");
 
-  // Caso o protocolo informado não exista.
-  if (!chamado || !formulario || chamado.id !== id) {
+  const [mensagem, setMensagem] = useState("");
+  const [erro, setErro] = useState("");
+
+  // Consulta o chamado real no IndexedDB.
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarChamado() {
+      setCarregando(true);
+      setErro("");
+      setMensagem("");
+      setEditando(false);
+      setChamado(null);
+      setFormulario(null);
+
+      try {
+        const dados = await buscarChamadoPorId(id);
+
+        if (!ativo) {
+          return;
+        }
+
+        if (dados) {
+          setChamado(dados);
+          setFormulario({ ...dados });
+        } else {
+          setErro("Chamado não encontrado.");
+        }
+      } catch (error) {
+        if (ativo) {
+          setErro(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível consultar o chamado."
+          );
+        }
+      } finally {
+        if (ativo) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    carregarChamado();
+
+    return () => {
+      ativo = false;
+    };
+  }, [id]);
+
+  // Atualiza os campos do formulário.
+  function alterarCampo(evento) {
+    const { name, value } = evento.target;
+
+    setFormulario((anterior) => ({
+      ...anterior,
+      [name]: value,
+    }));
+
+    setMensagem("");
+    setErro("");
+  }
+
+  // Inicia a edição com os dados atuais.
+  function iniciarEdicao() {
+    setFormulario({ ...chamado });
+    setEditando(true);
+    setMensagem("");
+    setErro("");
+  }
+
+  // Salva as alterações utilizando o serviço do Marcos.
+  async function salvarAlteracoes(evento) {
+    evento.preventDefault();
+
+    if (salvando || !formulario || !chamado) {
+      return;
+    }
+
+    if (
+      !formulario.titulo.trim() ||
+      !formulario.descricao.trim()
+    ) {
+      setErro("Preencha os campos obrigatórios.");
+      return;
+    }
+
+    setSalvando(true);
+    setMensagem("");
+    setErro("");
+
+    try {
+      // Enviamos somente os campos permitidos pelo serviço.
+      const dadosAtualizados = {
+        titulo: formulario.titulo.trim(),
+        descricao: formulario.descricao.trim(),
+        categoria: formulario.categoria,
+        prioridade: formulario.prioridade,
+        status: formulario.status,
+      };
+
+      const salvo = await atualizarChamado(
+        chamado.id,
+        dadosAtualizados
+      );
+
+      setChamado(salvo);
+      setFormulario({ ...salvo });
+      setEditando(false);
+
+      setMensagem("Alterações salvas com sucesso!");
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar as alterações."
+      );
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  // Descarta alterações não salvas.
+  function cancelarEdicao() {
+    if (salvando) {
+      return;
+    }
+
+    setFormulario({ ...chamado });
+    setEditando(false);
+    setMensagem("");
+    setErro("");
+  }
+
+  function formatarData(data) {
+    if (!data) {
+      return "-";
+    }
+
+    const dataTexto = String(data).slice(0, 10);
+    const partes = dataTexto.split("-");
+
+    if (partes.length !== 3) {
+      return dataTexto;
+    }
+
+    const [ano, mes, dia] = partes;
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  // Estado de carregamento.
+  if (carregando) {
+    return (
+      <main className="conteudo">
+        <h1>Detalhes do Chamado</h1>
+        <p className="subtitulo" role="status">
+          Carregando informações do chamado...
+        </p>
+      </main>
+    );
+  }
+
+  // Chamado não localizado ou erro na consulta.
+  if (!chamado || !formulario) {
     return (
       <main className="conteudo">
         <h1>Chamado não encontrado</h1>
 
-        <p className="subtitulo">
-          Não foi encontrado um chamado com esse número.
+        <p className="subtitulo" role="alert">
+          {erro || "Não foi encontrado um chamado com esse número."}
         </p>
 
         <button
@@ -64,49 +221,6 @@ export default function DetalhesChamado() {
     );
   }
 
-  // Atualiza os campos do formulário.
-  function alterarCampo(evento) {
-    const { name, value } = evento.target;
-
-    setFormulario((anterior) => ({
-      ...anterior,
-      [name]: value
-    }));
-  }
-
-  // Simula o salvamento das alterações.
-  function salvarAlteracoes(evento) {
-    evento.preventDefault();
-
-    if (
-      !formulario.titulo.trim() ||
-      !formulario.descricao.trim()
-    ) {
-      setMensagem("Preencha os campos obrigatórios.");
-      return;
-    }
-
-    // Atualiza apenas o estado local do React.
-    setChamado({ ...formulario });
-    setEditando(false);
-
-    setMensagem(
-      "Alterações aplicadas temporariamente. Ainda não foram gravadas no banco."
-    );
-  }
-
-  // Descarta as alterações não aplicadas.
-  function cancelarEdicao() {
-    setFormulario({ ...chamado });
-    setEditando(false);
-    setMensagem("");
-  }
-
-  function formatarData(data) {
-    const [ano, mes, dia] = data.split("-");
-    return `${dia}/${mes}/${ano}`;
-  }
-
   return (
     <main className="conteudo">
       {/* Retornar para a listagem */}
@@ -115,7 +229,7 @@ export default function DetalhesChamado() {
         className="detalhes-voltar"
         onClick={() => navigate("/chamados")}
       >
-        <ArrowLeft size={18} />
+        <ArrowLeft size={18} aria-hidden="true" />
         Voltar para chamados
       </button>
 
@@ -135,13 +249,9 @@ export default function DetalhesChamado() {
           <button
             type="button"
             className="detalhes-botao"
-            onClick={() => {
-              setFormulario({ ...chamado });
-              setEditando(true);
-              setMensagem("");
-            }}
+            onClick={iniciarEdicao}
           >
-            <Pencil size={16} />
+            <Pencil size={16} aria-hidden="true" />
             Editar
           </button>
         )}
@@ -150,7 +260,6 @@ export default function DetalhesChamado() {
       {/* Informações do chamado */}
       <section className="detalhes-container">
         <form onSubmit={salvarAlteracoes}>
-
           {/* Título */}
           <div className="detalhes-campo">
             <label htmlFor="det-titulo">
@@ -163,6 +272,8 @@ export default function DetalhesChamado() {
                 name="titulo"
                 value={formulario.titulo}
                 onChange={alterarCampo}
+                disabled={salvando}
+                maxLength={120}
                 required
               />
             ) : (
@@ -182,6 +293,7 @@ export default function DetalhesChamado() {
                 name="descricao"
                 value={formulario.descricao}
                 onChange={alterarCampo}
+                disabled={salvando}
                 rows={4}
                 required
               />
@@ -191,7 +303,6 @@ export default function DetalhesChamado() {
           </div>
 
           <div className="detalhes-grade">
-
             {/* Categoria */}
             <div className="detalhes-campo">
               <label htmlFor="det-categoria">
@@ -204,6 +315,7 @@ export default function DetalhesChamado() {
                   name="categoria"
                   value={formulario.categoria}
                   onChange={alterarCampo}
+                  disabled={salvando}
                 >
                   {categorias.map((item) => (
                     <option key={item} value={item}>
@@ -228,6 +340,7 @@ export default function DetalhesChamado() {
                   name="prioridade"
                   value={formulario.prioridade}
                   onChange={alterarCampo}
+                  disabled={salvando}
                 >
                   {prioridades.map((item) => (
                     <option key={item} value={item}>
@@ -252,6 +365,7 @@ export default function DetalhesChamado() {
                   name="status"
                   value={formulario.status}
                   onChange={alterarCampo}
+                  disabled={salvando}
                 >
                   {statusDisponiveis.map((item) => (
                     <option key={item} value={item}>
@@ -274,7 +388,7 @@ export default function DetalhesChamado() {
             </div>
           </div>
 
-          {/* Mensagem de confirmação */}
+          {/* Mensagens de sucesso e erro */}
           {mensagem && (
             <p
               className="detalhes-mensagem"
@@ -284,25 +398,37 @@ export default function DetalhesChamado() {
             </p>
           )}
 
+          {erro && (
+            <p
+              className="detalhes-mensagem"
+              role="alert"
+            >
+              {erro}
+            </p>
+          )}
+
           {/* Botões de edição */}
           {editando && (
             <div className="detalhes-acoes">
-
               <button
                 type="button"
                 className="detalhes-cancelar"
                 onClick={cancelarEdicao}
+                disabled={salvando}
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
                 Cancelar
               </button>
 
               <button
                 type="submit"
                 className="detalhes-botao"
+                disabled={salvando}
               >
-                <Save size={16} />
-                Aplicar alterações
+                <Save size={16} aria-hidden="true" />
+                {salvando
+                  ? "Salvando..."
+                  : "Salvar alterações"}
               </button>
             </div>
           )}

@@ -12,51 +12,52 @@ import {
   ExternalLink,
   Check,
   CalendarDays,
-  ListChecks
+  ListChecks,
 } from "lucide-react";
 
-import { chamadosMock } from "../mocks/chamadosMock";
+import {
+  listarChamados,
+  buscarChamadoPorId,
+  atualizarChamado,
+} from "../services/chamadosService";
+
 import "../styles/triagem.css";
 
 // ========================================
 // STATUS DISPONÍVEIS NO HELPDESK
 // ========================================
 
-// nome: valor oficial do status
-// label: texto exibido no cabeçalho do Kanban
-// classe: identificação visual no CSS
-
 const statusDisponiveis = [
   {
     nome: "Novo",
     label: "Novo",
-    classe: "novo"
+    classe: "novo",
   },
   {
     nome: "Aguardando Atendimento",
     label: "Aguardando\nAtendimento",
-    classe: "atendimento"
+    classe: "atendimento",
   },
   {
     nome: "Aguardando Retorno do Cliente",
     label: "Aguardando Retorno\ndo Cliente",
-    classe: "aguardando"
+    classe: "aguardando",
   },
   {
     nome: "Encaminhado para o DEV",
     label: "Encaminhado para\no DEV",
-    classe: "dev"
+    classe: "dev",
   },
   {
     nome: "Encaminhado para Equipe de Produto",
     label: "Encaminhado para\nEquipe de Produto",
-    classe: "produto"
+    classe: "produto",
   },
   {
     nome: "Fechado",
     label: "Fechado",
-    classe: "fechado"
-  }
+    classe: "fechado",
+  },
 ];
 
 // ========================================
@@ -66,7 +67,7 @@ const statusDisponiveis = [
 const responsaveis = [
   { id: "wesley", nome: "Wesley" },
   { id: "marcus", nome: "Marcus" },
-  { id: "eliezer", nome: "Eliezer" }
+  { id: "eliezer", nome: "Eliezer" },
 ];
 
 const NAO_ATRIBUIDO = "nao-atribuido";
@@ -74,6 +75,10 @@ const NAO_ATRIBUIDO = "nao-atribuido";
 // ========================================
 // FUNÇÕES AUXILIARES
 // ========================================
+
+function obterResponsavel(chamado) {
+  return chamado.responsavelId || NAO_ATRIBUIDO;
+}
 
 function nomeResponsavel(id) {
   const responsavel = responsaveis.find(
@@ -88,13 +93,15 @@ function formatarData(data) {
     return "Não informada";
   }
 
-  const partes = data.split("-");
+  const texto = String(data).slice(0, 10);
+  const partes = texto.split("-");
 
   if (partes.length !== 3) {
-    return data;
+    return texto;
   }
 
-  return partes.reverse().join("/");
+  const [ano, mes, dia] = partes;
+  return `${dia}/${mes}/${ano}`;
 }
 
 // ========================================
@@ -103,6 +110,15 @@ function formatarData(data) {
 
 export default function Triagem() {
   // ========================================
+  // DADOS REAIS DO INDEXEDDB
+  // ========================================
+
+  const [chamados, setChamados] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erroCarregamento, setErroCarregamento] =
+    useState("");
+
+  // ========================================
   // PESQUISA E FILTROS
   // ========================================
 
@@ -110,15 +126,6 @@ export default function Triagem() {
 
   const [filtroResponsavel, setFiltroResponsavel] =
     useState("todos");
-
-  // ========================================
-  // ALTERAÇÕES TEMPORÁRIAS DOS CHAMADOS
-  // ========================================
-
-  const [atribuicoes, setAtribuicoes] = useState({});
-
-  const [statusAlterados, setStatusAlterados] =
-    useState({});
 
   // ========================================
   // PAINEL LATERAL
@@ -134,25 +141,48 @@ export default function Triagem() {
     useState("Novo");
 
   const [mensagem, setMensagem] = useState("");
+  const [erroSalvamento, setErroSalvamento] = useState("");
+  const [salvando, setSalvando] = useState(false);
 
   // ========================================
-  // CONSULTAR RESPONSÁVEL E STATUS
+  // CONSULTA INICIAL AO INDEXEDDB
   // ========================================
 
-  function obterResponsavel(chamado) {
-    return (
-      atribuicoes[chamado.id] ??
-      chamado.responsavelId ??
-      NAO_ATRIBUIDO
-    );
-  }
+  useEffect(() => {
+    let ativo = true;
 
-  function obterStatus(chamado) {
-    return (
-      statusAlterados[chamado.id] ??
-      chamado.status
-    );
-  }
+    async function carregarChamados() {
+      try {
+        const dados = await listarChamados();
+
+        if (ativo) {
+          setChamados(
+            Array.isArray(dados) ? dados : []
+          );
+
+          setErroCarregamento("");
+        }
+      } catch (erro) {
+        if (ativo) {
+          setErroCarregamento(
+            erro instanceof Error
+              ? erro.message
+              : "Não foi possível carregar os chamados."
+          );
+        }
+      } finally {
+        if (ativo) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    carregarChamados();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   // ========================================
   // ABRIR PAINEL DE TRIAGEM
@@ -165,11 +195,10 @@ export default function Triagem() {
       obterResponsavel(chamado)
     );
 
-    setStatusPendente(
-      obterStatus(chamado)
-    );
+    setStatusPendente(chamado.status);
 
     setMensagem("");
+    setErroSalvamento("");
   }
 
   // ========================================
@@ -177,20 +206,26 @@ export default function Triagem() {
   // ========================================
 
   function fecharTriagem() {
-    setChamadoSelecionado(null);
-    setMensagem("");
-  }
-
-  // Fecha o painel com ESC.
-
-  useEffect(() => {
-    if (!chamadoSelecionado) {
+    if (salvando) {
       return;
     }
 
-    function aoPressionarTecla(event) {
-      if (event.key === "Escape") {
-        fecharTriagem();
+    setChamadoSelecionado(null);
+    setMensagem("");
+    setErroSalvamento("");
+  }
+
+  // Fecha o painel com ESC.
+  useEffect(() => {
+    if (!chamadoSelecionado || salvando) {
+      return;
+    }
+
+    function aoPressionarTecla(evento) {
+      if (evento.key === "Escape") {
+        setChamadoSelecionado(null);
+        setMensagem("");
+        setErroSalvamento("");
       }
     }
 
@@ -205,24 +240,22 @@ export default function Triagem() {
         aoPressionarTecla
       );
     };
-  }, [chamadoSelecionado]);
+  }, [chamadoSelecionado, salvando]);
 
   // ========================================
-  // SALVAR ALTERAÇÕES DA TRIAGEM
+  // SALVAR ALTERAÇÕES NO INDEXEDDB
   // ========================================
 
-  function salvarTriagem() {
-    if (!chamadoSelecionado) {
+  async function salvarTriagem() {
+    if (!chamadoSelecionado || salvando) {
       return;
     }
-
-    const chamadoId = chamadoSelecionado.id;
 
     const responsavelAnterior =
       obterResponsavel(chamadoSelecionado);
 
     const statusAnterior =
-      obterStatus(chamadoSelecionado);
+      chamadoSelecionado.status;
 
     const alterouResponsavel =
       responsavelAnterior !== responsavelPendente;
@@ -235,42 +268,97 @@ export default function Triagem() {
       return;
     }
 
-    // Atualiza o responsável.
+    const dadosAtualizados = {};
 
     if (alterouResponsavel) {
-      setAtribuicoes((anterior) => ({
-        ...anterior,
-        [chamadoId]: responsavelPendente
-      }));
+      dadosAtualizados.responsavelId =
+        responsavelPendente;
     }
-
-    // Atualiza o status.
 
     if (alterouStatus) {
-      setStatusAlterados((anterior) => ({
-        ...anterior,
-        [chamadoId]: statusPendente
-      }));
+      dadosAtualizados.status = statusPendente;
     }
 
-    // Mensagem de confirmação.
+    setSalvando(true);
+    setMensagem("");
+    setErroSalvamento("");
 
-    if (alterouResponsavel && alterouStatus) {
-      setMensagem(
-        "Responsável e status atualizados com sucesso."
+    try {
+      const salvo = await atualizarChamado(
+        chamadoSelecionado.id,
+        dadosAtualizados
       );
-    } else if (alterouResponsavel) {
-      setMensagem(
-        responsavelPendente === NAO_ATRIBUIDO
-          ? "Responsável removido do chamado."
-          : `Chamado atribuído a ${nomeResponsavel(
-              responsavelPendente
-            )}.`
+
+      // Atualiza os dados reais exibidos no Kanban.
+      setChamados((anteriores) =>
+        anteriores.map((chamado) =>
+          chamado.id === salvo.id ? salvo : chamado
+        )
       );
-    } else {
-      setMensagem(
-        `Status alterado para "${statusPendente}".`
+
+      // Mantém o painel aberto e atualizado.
+      setChamadoSelecionado(salvo);
+
+      setResponsavelPendente(
+        obterResponsavel(salvo)
       );
+
+      setStatusPendente(salvo.status);
+
+      if (alterouResponsavel && alterouStatus) {
+        setMensagem(
+          "Responsável e status atualizados com sucesso."
+        );
+      } else if (alterouResponsavel) {
+        setMensagem(
+          responsavelPendente === NAO_ATRIBUIDO
+            ? "Responsável removido do chamado."
+            : `Chamado atribuído a ${nomeResponsavel(
+                responsavelPendente
+              )}.`
+        );
+      } else {
+        setMensagem(
+          `Status alterado para "${statusPendente}".`
+        );
+      }
+    } catch (erro) {
+      // Caso a gravação tenha ocorrido, mas a
+      // notificação falhe, consultamos novamente
+      // para refletir o estado real do banco.
+      try {
+        const [dados, registroAtual] =
+          await Promise.all([
+            listarChamados(),
+            buscarChamadoPorId(
+              chamadoSelecionado.id
+            ),
+          ]);
+
+        setChamados(
+          Array.isArray(dados) ? dados : []
+        );
+
+        if (registroAtual) {
+          setChamadoSelecionado(registroAtual);
+          setResponsavelPendente(
+            obterResponsavel(registroAtual)
+          );
+          setStatusPendente(
+            registroAtual.status
+          );
+        }
+      } catch {
+        // Mantém os dados atuais na tela.
+      }
+
+      setErroSalvamento(
+        erro instanceof Error
+          ? erro.message
+          : "Não foi possível confirmar as alterações."
+      );
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -278,10 +366,11 @@ export default function Triagem() {
   // FILTRAGEM DOS CHAMADOS
   // ========================================
 
-  const chamadosFiltrados = chamadosMock.filter(
+  const chamadosFiltrados = chamados.filter(
     (chamado) => {
-      const texto =
-        `${chamado.id} ${chamado.titulo}`.toLowerCase();
+      const texto = `${chamado.id} ${
+        chamado.titulo
+      }`.toLowerCase();
 
       const correspondePesquisa = texto.includes(
         pesquisa.trim().toLowerCase()
@@ -305,9 +394,9 @@ export default function Triagem() {
   // INDICADORES DA TRIAGEM
   // ========================================
 
-  const totalChamados = chamadosMock.length;
+  const totalChamados = chamados.length;
 
-  const naoAtribuidos = chamadosMock.filter(
+  const naoAtribuidos = chamados.filter(
     (chamado) =>
       obterResponsavel(chamado) === NAO_ATRIBUIDO
   ).length;
@@ -315,7 +404,7 @@ export default function Triagem() {
   const totalExibidos = chamadosFiltrados.length;
 
   // ========================================
-  // VALORES ATUAIS DO CHAMADO SELECIONADO
+  // VALORES DO CHAMADO SELECIONADO
   // ========================================
 
   const responsavelSelecionado = chamadoSelecionado
@@ -323,7 +412,7 @@ export default function Triagem() {
     : NAO_ATRIBUIDO;
 
   const statusSelecionado = chamadoSelecionado
-    ? obterStatus(chamadoSelecionado)
+    ? chamadoSelecionado.status
     : "Novo";
 
   const alterouResponsavel =
@@ -341,7 +430,6 @@ export default function Triagem() {
 
   return (
     <main className="conteudo kanban-pagina">
-
       {/* CABEÇALHO DA PÁGINA */}
 
       <div className="kanban-topo">
@@ -368,16 +456,19 @@ export default function Triagem() {
               aria-hidden="true"
             />
 
-            <strong>Quadro de atendimentos</strong>
+            <strong>
+              Quadro de atendimentos
+            </strong>
           </div>
 
           <span>
-            {totalExibidos} chamado(s) exibido(s)
+            {carregando
+              ? "Carregando chamados..."
+              : `${totalExibidos} chamado(s) exibido(s)`}
           </span>
         </div>
 
         <div className="kanban-triagem-filtros">
-
           {/* PESQUISA */}
 
           <div className="kanban-filtro-campo">
@@ -396,8 +487,8 @@ export default function Triagem() {
                 type="search"
                 placeholder="Número ou título..."
                 value={pesquisa}
-                onChange={(event) =>
-                  setPesquisa(event.target.value)
+                onChange={(evento) =>
+                  setPesquisa(evento.target.value)
                 }
               />
             </div>
@@ -419,8 +510,10 @@ export default function Triagem() {
               id="kanban-responsavel"
               className="kanban-select-responsavel"
               value={filtroResponsavel}
-              onChange={(event) =>
-                setFiltroResponsavel(event.target.value)
+              onChange={(evento) =>
+                setFiltroResponsavel(
+                  evento.target.value
+                )
               }
             >
               <option value="todos">
@@ -468,6 +561,26 @@ export default function Triagem() {
         </div>
       </section>
 
+      {/* ERROS E CARREGAMENTO */}
+
+      {erroCarregamento && (
+        <p
+          className="triagem-mensagem"
+          role="alert"
+        >
+          {erroCarregamento}
+        </p>
+      )}
+
+      {carregando && (
+        <p
+          className="triagem-mensagem"
+          role="status"
+        >
+          Carregando chamados do banco de dados...
+        </p>
+      )}
+
       {/* ========================================
           QUADRO KANBAN
       ======================================== */}
@@ -480,7 +593,7 @@ export default function Triagem() {
           const chamadosDaColuna =
             chamadosFiltrados.filter(
               (chamado) =>
-                obterStatus(chamado) === coluna.nome
+                chamado.status === coluna.nome
             );
 
           return (
@@ -492,12 +605,6 @@ export default function Triagem() {
               {/* CABEÇALHO DA COLUNA */}
 
               <div className="kanban-cabecalho">
-
-                {/*
-                  Exibe o label com quebra de linha.
-                  O nome oficial não é modificado.
-                */}
-
                 <h2>{coluna.label}</h2>
 
                 <span>
@@ -543,7 +650,9 @@ export default function Triagem() {
                       {/* PRIORIDADE */}
 
                       <span
-                        className={`kanban-prioridade prioridade-${chamado.prioridade.toLowerCase()}`}
+                        className={`kanban-prioridade prioridade-${String(
+                          chamado.prioridade || ""
+                        ).toLowerCase()}`}
                       >
                         {chamado.prioridade}
                       </span>
@@ -585,7 +694,6 @@ export default function Triagem() {
 
       {chamadoSelecionado && (
         <div className="triagem-overlay">
-
           {/* FUNDO DO PAINEL */}
 
           <button
@@ -593,6 +701,7 @@ export default function Triagem() {
             className="triagem-overlay-fundo"
             aria-label="Fechar painel de triagem"
             onClick={fecharTriagem}
+            disabled={salvando}
           />
 
           {/* PAINEL DE TRIAGEM */}
@@ -620,6 +729,7 @@ export default function Triagem() {
                 type="button"
                 className="triagem-painel-fechar"
                 onClick={fecharTriagem}
+                disabled={salvando}
                 aria-label="Fechar painel"
                 autoFocus
               >
@@ -633,7 +743,6 @@ export default function Triagem() {
             {/* CONTEÚDO DO PAINEL */}
 
             <div className="triagem-painel-conteudo">
-
               {/* INFORMAÇÕES DO CHAMADO */}
 
               <div className="triagem-painel-secao">
@@ -668,9 +777,7 @@ export default function Triagem() {
                   <div>
                     <dt>Status atual</dt>
 
-                    <dd>
-                      {statusSelecionado}
-                    </dd>
+                    <dd>{statusSelecionado}</dd>
                   </div>
 
                   <div>
@@ -727,12 +834,14 @@ export default function Triagem() {
                   id="triagem-novo-status"
                   className="triagem-select"
                   value={statusPendente}
-                  onChange={(event) => {
+                  disabled={salvando}
+                  onChange={(evento) => {
                     setStatusPendente(
-                      event.target.value
+                      evento.target.value
                     );
 
                     setMensagem("");
+                    setErroSalvamento("");
                   }}
                 >
                   {statusDisponiveis.map((status) => (
@@ -792,12 +901,14 @@ export default function Triagem() {
                   id="triagem-novo-responsavel"
                   className="triagem-select"
                   value={responsavelPendente}
-                  onChange={(event) => {
+                  disabled={salvando}
+                  onChange={(evento) => {
                     setResponsavelPendente(
-                      event.target.value
+                      evento.target.value
                     );
 
                     setMensagem("");
+                    setErroSalvamento("");
                   }}
                 >
                   <option value={NAO_ATRIBUIDO}>
@@ -819,7 +930,7 @@ export default function Triagem() {
                   independentemente do status do chamado.
                 </p>
 
-                {/* MENSAGEM DE CONFIRMAÇÃO */}
+                {/* MENSAGENS DE CONFIRMAÇÃO */}
 
                 {mensagem && (
                   <p
@@ -834,6 +945,15 @@ export default function Triagem() {
                     {mensagem}
                   </p>
                 )}
+
+                {erroSalvamento && (
+                  <p
+                    className="triagem-mensagem"
+                    role="alert"
+                  >
+                    {erroSalvamento}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -846,6 +966,7 @@ export default function Triagem() {
                 type="button"
                 className="triagem-botao-cancelar"
                 onClick={fecharTriagem}
+                disabled={salvando}
               >
                 Fechar
               </button>
@@ -854,14 +975,18 @@ export default function Triagem() {
                 type="button"
                 className="triagem-botao-salvar"
                 onClick={salvarTriagem}
-                disabled={!possuiAlteracao}
+                disabled={
+                  salvando || !possuiAlteracao
+                }
               >
                 <Check
                   size={17}
                   aria-hidden="true"
                 />
 
-                Salvar alterações
+                {salvando
+                  ? "Salvando..."
+                  : "Salvar alterações"}
               </button>
             </div>
           </aside>
