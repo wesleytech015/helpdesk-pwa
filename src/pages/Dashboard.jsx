@@ -10,11 +10,11 @@ import {
   ListFilter,
   Ticket,
   Tickets,
-  FolderOpen
+  FolderOpen,
 } from "lucide-react";
 
 import CardIndicador from "../components/CardIndicador";
-import { chamadosMock } from "../mocks/chamadosMock";
+import { listarChamados } from "../services/chamadosService";
 
 import "../styles/dashboard.css";
 
@@ -34,7 +34,7 @@ const meses = [
   "Setembro",
   "Outubro",
   "Novembro",
-  "Dezembro"
+  "Dezembro",
 ];
 
 // ========================================
@@ -44,17 +44,83 @@ const meses = [
 function classeStatus(status) {
   const classes = {
     Novo: "novo",
+    "Aguardando Atendimento": "aguardando",
     "Aguardando Retorno do Cliente": "aguardando",
     "Encaminhado para o DEV": "dev",
     "Encaminhado para Equipe de Produto": "produto",
-    Fechado: "fechado"
+    Fechado: "fechado",
   };
 
   return classes[status] || "";
 }
 
+// ========================================
+// FUNÇÕES AUXILIARES
+// ========================================
+
+function obterDataAbertura(chamado) {
+  return chamado.dataAbertura || chamado.dataCriacao || "";
+}
+
+function obterAnoMes(data) {
+  if (!data) {
+    return { ano: null, mes: null };
+  }
+
+  const texto = String(data).slice(0, 10);
+  const partes = texto.split("-");
+
+  if (partes.length !== 3) {
+    return { ano: null, mes: null };
+  }
+
+  const ano = Number(partes[0]);
+  const mes = Number(partes[1]);
+
+  if (
+    !Number.isInteger(ano) ||
+    !Number.isInteger(mes) ||
+    mes < 1 ||
+    mes > 12
+  ) {
+    return { ano: null, mes: null };
+  }
+
+  return { ano, mes };
+}
+
+function formatarData(data) {
+  if (!data) {
+    return "-";
+  }
+
+  const texto = String(data).slice(0, 10);
+  const partes = texto.split("-");
+
+  if (partes.length !== 3) {
+    return texto;
+  }
+
+  const [ano, mes, dia] = partes;
+
+  return `${dia}/${mes}/${ano}`;
+}
+
+// ========================================
+// COMPONENTE PRINCIPAL
+// ========================================
+
 export default function Dashboard() {
   const agora = new Date();
+
+  // ========================================
+  // CHAMADOS REAIS DO INDEXEDDB
+  // ========================================
+
+  const [chamados, setChamados] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erroCarregamento, setErroCarregamento] =
+    useState("");
 
   // ========================================
   // ESTADOS DOS FILTROS
@@ -77,21 +143,64 @@ export default function Dashboard() {
   const calendarioBotaoRef = useRef(null);
 
   // ========================================
+  // CONSULTA AOS CHAMADOS REAIS
+  // ========================================
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarChamados() {
+      setCarregando(true);
+      setErroCarregamento("");
+
+      try {
+        const dados = await listarChamados();
+
+        if (ativo) {
+          setChamados(
+            Array.isArray(dados) ? dados : []
+          );
+        }
+      } catch (erro) {
+        if (ativo) {
+          setChamados([]);
+
+          setErroCarregamento(
+            erro instanceof Error
+              ? erro.message
+              : "Não foi possível carregar os chamados."
+          );
+        }
+      } finally {
+        if (ativo) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    carregarChamados();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  // ========================================
   // FECHAR CALENDÁRIO
   // ========================================
 
   useEffect(() => {
-    function fecharAoClicarFora(event) {
+    function fecharAoClicarFora(evento) {
       if (
         calendarioRef.current &&
-        !calendarioRef.current.contains(event.target)
+        !calendarioRef.current.contains(evento.target)
       ) {
         setCalendarioAberto(false);
       }
     }
 
-    function fecharComEscape(event) {
-      if (event.key === "Escape") {
+    function fecharComEscape(evento) {
+      if (evento.key === "Escape") {
         setCalendarioAberto(false);
         calendarioBotaoRef.current?.focus();
       }
@@ -127,20 +236,26 @@ export default function Dashboard() {
   const anosDisponiveis = [
     ...new Set([
       agora.getFullYear(),
-      ...chamadosMock.map((chamado) =>
-        Number(chamado.dataAbertura.slice(0, 4))
-      )
-    ])
+      ...chamados
+        .map((chamado) =>
+          obterAnoMes(
+            obterDataAbertura(chamado)
+          ).ano
+        )
+        .filter((valor) => valor !== null),
+    ]),
   ].sort((a, b) => b - a);
 
   // ========================================
   // FILTRAGEM DOS CHAMADOS
   // ========================================
 
-  const chamadosFiltrados = chamadosMock.filter(
+  const chamadosFiltrados = chamados.filter(
     (chamado) => {
-      const [anoChamado, mesChamado] =
-        chamado.dataAbertura.split("-").map(Number);
+      const { ano: anoChamado, mes: mesChamado } =
+        obterAnoMes(
+          obterDataAbertura(chamado)
+        );
 
       const correspondeAno =
         ano === "todos" ||
@@ -451,6 +566,22 @@ export default function Dashboard() {
       </section>
 
       {/* ========================================
+          MENSAGENS DE CARREGAMENTO E ERRO
+      ======================================== */}
+
+      {carregando && (
+        <p role="status" className="subtitulo">
+          Carregando indicadores e chamados...
+        </p>
+      )}
+
+      {erroCarregamento && (
+        <p role="alert" className="subtitulo">
+          Erro ao carregar os chamados: {erroCarregamento}
+        </p>
+      )}
+
+      {/* ========================================
           GRADE DOS INDICADORES
       ======================================== */}
 
@@ -565,7 +696,9 @@ export default function Dashboard() {
             <h2>Chamados encontrados</h2>
 
             <p>
-              {total} chamado(s) conforme os filtros
+              {carregando
+                ? "Carregando chamados..."
+                : `${total} chamado(s) conforme os filtros`}
             </p>
           </div>
 
@@ -596,57 +729,87 @@ export default function Dashboard() {
             </thead>
 
             <tbody>
-              {chamadosFiltrados.map((chamado) => (
-                <tr key={chamado.id}>
-                  <td>
-                    <Link
-                      to={`/chamados/${chamado.id}`}
-                      className="link-protocolo"
-                    >
-                      {chamado.id}
-                    </Link>
-                  </td>
+              {!carregando &&
+                !erroCarregamento &&
+                chamadosFiltrados.map((chamado) => (
+                  <tr key={chamado.id}>
+                    <td>
+                      <Link
+                        to={`/chamados/${chamado.id}`}
+                        className="link-protocolo"
+                      >
+                        {chamado.id}
+                      </Link>
+                    </td>
 
-                  <td>{chamado.titulo}</td>
+                    <td>{chamado.titulo}</td>
 
-                  <td>{chamado.categoria}</td>
+                    <td>{chamado.categoria}</td>
 
-                  <td>
-                    <span
-                      className={`dashboard-prioridade prioridade-${chamado.prioridade.toLowerCase()}`}
-                    >
-                      {chamado.prioridade}
-                    </span>
-                  </td>
+                    <td>
+                      <span
+                        className={`dashboard-prioridade prioridade-${String(
+                          chamado.prioridade || ""
+                        ).toLowerCase()}`}
+                      >
+                        {chamado.prioridade}
+                      </span>
+                    </td>
 
-                  <td>
-                    <span
-                      className={`dashboard-status status-${classeStatus(chamado.status)}`}
-                    >
-                      {chamado.status}
-                    </span>
-                  </td>
+                    <td>
+                      <span
+                        className={`dashboard-status status-${classeStatus(
+                          chamado.status
+                        )}`}
+                      >
+                        {chamado.status}
+                      </span>
+                    </td>
 
-                  <td>
-                    {chamado.dataAbertura
-                      .split("-")
-                      .reverse()
-                      .join("/")}
-                  </td>
-                </tr>
-              ))}
+                    <td>
+                      {formatarData(
+                        obterDataAbertura(chamado)
+                      )}
+                    </td>
+                  </tr>
+                ))}
 
-              {total === 0 && (
+              {carregando && (
                 <tr>
                   <td
                     colSpan={6}
                     className="sem-dados"
                   >
-                    Nenhum chamado encontrado para
-                    os filtros selecionados.
+                    Carregando chamados...
                   </td>
                 </tr>
               )}
+
+              {!carregando && erroCarregamento && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="sem-dados"
+                    role="alert"
+                  >
+                    Não foi possível consultar os chamados.
+                  </td>
+                </tr>
+              )}
+
+              {!carregando &&
+                !erroCarregamento &&
+                total === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="sem-dados"
+                    >
+                      Nenhum chamado encontrado para
+                      os filtros selecionados.
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>
