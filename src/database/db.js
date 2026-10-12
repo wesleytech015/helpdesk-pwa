@@ -3,15 +3,20 @@
  * Banco de dados local do HelpDesk PWA.
  *
  * Utiliza IndexedDB para persistência dos chamados.
- * Aceita identificadores UUID em texto e IDs numéricos
- * legados, sem exigir autoIncrement.
+ * Mantém UUIDs como identificadores internos e gera números
+ * sequenciais contínuos no formato CH-0001, CH-0002...
+ *
+ * A numeração não é reutilizada após a exclusão de chamados.
  */
 
 import { validarChamado } from "./chamado.model.js";
 
 const DB_NAME = "helpdesk-pwa";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
+
 const STORE_NAME = "chamados";
+const CONTADOR_STORE = "contadores";
+const CONTADOR_CHAMADOS = "chamados";
 
 /**
  * Cria os índices utilizados pelo banco.
@@ -31,7 +36,25 @@ function criarIndices(store) {
 }
 
 /**
- * Abre o banco e prepara a estrutura.
+ * Extrai o número de um código no formato CH-0001.
+ */
+function extrairNumeroSequencial(numero) {
+  if (typeof numero !== "string") {
+    return 0;
+  }
+
+  const correspondencia = numero.match(/^CH-(\d+)$/i);
+
+  return correspondencia ? Number(correspondencia[1]) : 0;
+}
+
+/**
+ * Abre o banco e prepara sua estrutura.
+ *
+ * Na atualização para a versão 3:
+ * - cria o armazenamento de contadores;
+ * - atribui números aos chamados antigos que ainda não possuem;
+ * - inicializa o contador com o maior número existente.
  */
 export function abrirBanco() {
   return new Promise((resolve, reject) => {
@@ -46,55 +69,70 @@ export function abrirBanco() {
       const banco = evento.target.result;
       const transacao = evento.target.transaction;
 
+      let store;
+
       if (!banco.objectStoreNames.contains(STORE_NAME)) {
-        const store = banco.createObjectStore(STORE_NAME, {
+        store = banco.createObjectStore(STORE_NAME, {
           keyPath: "id",
         });
 
         criarIndices(store);
-        return;
+      } else {
+        store = transacao.objectStore(STORE_NAME);
+
+        /*
+         * Compatibilidade com esquemas antigos.
+         * Caso a chave primária seja diferente, preservamos
+         * os registros e recriamos o armazenamento.
+         */
+        if (store.keyPath !== "id" || store.autoIncrement) {
+          const leituraAntiga = store.getAll();
+
+          leituraAntiga.onsuccess = () => {
+            const registrosAntigos = leituraAntiga.result;
+
+            banco.deleteObjectStore(STORE_NAME);
+
+            const novoStore = banco.createObjectStore(STORE_NAME, {
+              keyPath: "id",
+            });
+
+            criarIndices(novoStore);
+
+            migrarRegistros(registrosAntigos, novoStore, transacao);
+          };
+
+          leituraAntiga.onerror = () => {
+            try {
+              transacao.abort();
+            } catch {
+              // A transação pode já estar finalizada.
+            }
+          };
+        } else {
+          criarIndices(store);
+
+          const leitura = store.getAll();
+
+          leitura.onsuccess = () => {
+            migrarRegistros(leitura.result, store, transacao);
+          };
+
+          leitura.onerror = () => {
+            try {
+              transacao.abort();
+            } catch {
+              // A transação pode já estar finalizada.
+            }
+          };
+        }
       }
 
-      const storeAtual = transacao.objectStore(STORE_NAME);
-
-      if (!storeAtual.autoIncrement && storeAtual.keyPath === "id") {
-        criarIndices(storeAtual);
-        return;
-      }
-
-      /*
-       * Migração do armazenamento antigo.
-       * A leitura e a recriação ocorrem na transação de upgrade.
-       */
-      const leitura = storeAtual.getAll();
-
-      leitura.onsuccess = () => {
-        const registros = leitura.result;
-
-        banco.deleteObjectStore(STORE_NAME);
-
-        const novoStore = banco.createObjectStore(STORE_NAME, {
-          keyPath: "id",
+      if (!banco.objectStoreNames.contains(CONTADOR_STORE)) {
+        banco.createObjectStore(CONTADOR_STORE, {
+          keyPath: "chave",
         });
-
-        criarIndices(novoStore);
-
-        for (const registro of registros) {
-          if (registro.id === undefined || registro.id === null) {
-            continue;
-          }
-
-          novoStore.put(registro);
-        }
-      };
-
-      leitura.onerror = () => {
-        try {
-          transacao.abort();
-        } catch {
-          // A transação pode já estar finalizada.
-        }
-      };
+      }
     };
 
     requisicao.onsuccess = () => {
@@ -121,16 +159,60 @@ export function abrirBanco() {
 }
 
 /**
+ * Migra registros existentes sem apagar seus dados.
+ * Registros que já possuem numero mantêm esse número.
+ */
+function migrarRegistros(registros, store, transacao) {
+  let maiorNumero = 0;
+
+  for (const registro of registros) {
+    maiorNumero = Math.max(
+      maiorNumero,
+      extrairNumeroSequencial(registro.numero)
+    );
+  }
+
+  for (const registroOriginal of registros) {
+    if (
+      registroOriginal.id === undefined ||
+      registroOriginal.id === null
+    ) {
+      continue;
+    }
+
+    const registro = { ...registroOriginal };
+
+    if (!registro.numero) {
+      maiorNumero += 1;
+      registro.numero = `CH-${String(maiorNumero).padStart(4, "0")}`;
+    }
+
+    store.put(registro);
+  }
+
+  const contadores = transacao.objectStore(CONTADOR_STORE);
+
+  contadores.put({
+    chave: CONTADOR_CHAMADOS,
+    ultimoNumero: maiorNumero,
+  });
+}
+
+/**
  * Executa uma operação IndexedDB e fecha a conexão.
  */
-async function executarOperacao(modo, operacao) {
+async function executarOperacao(
+  modo,
+  operacao,
+  stores = [STORE_NAME]
+) {
   const banco = await abrirBanco();
 
   return new Promise((resolve, reject) => {
     let transacao;
 
     try {
-      transacao = banco.transaction(STORE_NAME, modo);
+      transacao = banco.transaction(stores, modo);
     } catch (erro) {
       banco.close();
       reject(erro);
@@ -193,10 +275,12 @@ async function executarOperacao(modo, operacao) {
 }
 
 /**
- * Inclui um chamado.
+ * Inclui um chamado com número sequencial automático.
+ *
+ * Retorna o registro gravado, incluindo id e numero.
  *
  * @param {Object} chamado
- * @returns {Promise<string|number>}
+ * @returns {Promise<Object>}
  */
 export async function adicionarChamado(chamado) {
   if (!chamado || typeof chamado !== "object" || Array.isArray(chamado)) {
@@ -213,19 +297,43 @@ export async function adicionarChamado(chamado) {
     throw new Error("O identificador do chamado é obrigatório.");
   }
 
-  const resultado = validarChamado(registro);
+  const resultadoValidacao = validarChamado(registro);
 
-  if (!resultado.valido) {
-    throw new Error(resultado.erros.join(" "));
+  if (!resultadoValidacao.valido) {
+    throw new Error(resultadoValidacao.erros.join(" "));
   }
 
-  return executarOperacao("readwrite", (store, transacao, definirResultado) => {
-    const requisicao = store.add(registro);
+  return executarOperacao(
+    "readwrite",
+    (store, transacao, definirResultado) => {
+      const contadores = transacao.objectStore(CONTADOR_STORE);
+      const leitura = contadores.get(CONTADOR_CHAMADOS);
 
-    requisicao.onsuccess = () => {
-      definirResultado(requisicao.result);
-    };
-  });
+      leitura.onsuccess = () => {
+        const ultimoNumero = leitura.result?.ultimoNumero ?? 0;
+        const proximoNumero = ultimoNumero + 1;
+
+        const registroNumerado = {
+          ...registro,
+          numero: `CH-${String(proximoNumero).padStart(4, "0")}`,
+        };
+
+        const gravacaoContador = contadores.put({
+          chave: CONTADOR_CHAMADOS,
+          ultimoNumero: proximoNumero,
+        });
+
+        gravacaoContador.onsuccess = () => {
+          const gravacaoChamado = store.add(registroNumerado);
+
+          gravacaoChamado.onsuccess = () => {
+            definirResultado(registroNumerado);
+          };
+        };
+      };
+    },
+    [STORE_NAME, CONTADOR_STORE]
+  );
 }
 
 /**
@@ -260,7 +368,7 @@ export async function buscarChamadoPorId(id) {
 }
 
 /**
- * Atualiza um chamado existente, preservando a data de criação.
+ * Atualiza um chamado sem permitir alteração do número sequencial.
  *
  * @param {string|number} id
  * @param {Object} dados
@@ -286,15 +394,18 @@ export async function atualizarChamado(id, dados) {
       const atualizado = {
         ...atual,
         ...dados,
-        id,
+        id: atual.id,
+        numero: atual.numero,
         dataCriacao: atual.dataCriacao,
         dataAtualizacao: new Date().toISOString(),
       };
 
-      const resultado = validarChamado(atualizado);
+      const resultadoValidacao = validarChamado(atualizado);
 
-      if (!resultado.valido) {
-        transacao.__erroAtualizacao = new Error(resultado.erros.join(" "));
+      if (!resultadoValidacao.valido) {
+        transacao.__erroAtualizacao = new Error(
+          resultadoValidacao.erros.join(" ")
+        );
         transacao.abort();
         return;
       }
@@ -310,6 +421,7 @@ export async function atualizarChamado(id, dados) {
 
 /**
  * Exclui um chamado por ID.
+ * A exclusão não reduz o contador sequencial.
  *
  * @param {string|number} id
  * @returns {Promise<void>}
