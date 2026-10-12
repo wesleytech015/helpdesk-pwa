@@ -1,0 +1,765 @@
+
+/* ==========================================
+   DASHBOARD - CONFIGURAÇÕES GERAIS
+========================================== */
+
+.conteudo.dashboard {
+  width: 100%;
+  max-width: 1300px;
+  margin: 24px auto;
+  padding: 0 24px;
+}
+
+/* ==========================================
+   CABEÇALHO DO DASHBOARD
+========================================== */
+
+.dashboard .dashboard-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dashboard .dashboard-topo h1 {
+  margin: 0 0 5px;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.dashboard .dashboard-topo .subtitulo {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.dashboard .dashboard-novo-chamado {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 17px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.dashboard .dashboard-novo-chamado:hover {
+  background: #1d4ed8;
+}
+
+/* ==========================================
+   PAINEL DE FILTROS
+========================================== */
+
+.dashboard .dashboard-filtros-painel {
+  position: relative;
+  z-index: 5;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.dashboard .dashboard-filtros-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.dashboard .dashboard-filtros-campos {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.2fr)
+    minmax(0, 0.8fr)
+    minmax(0, 1.2fr)
+    auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.dashboard .dashboard-filtro-campo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+
+.dashboard .dashboard-filtro-campo label,
+.dashboard .dashboard-filtro-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dashboard .dashboard-filtro-campo select {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+}
+
+.dashboard .dashboard-filtro-campo select:focus {
+  border-color: #2563eb;
+}
+
+/* ==========================================
+   SELETOR DE MÊS
+========================================== */
+
+.dashboard .dashboard-filtro-mes {
+  position: relative;
+}
+
+.dashboard .dashboard-mes-botao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dashboard .dashboard-mes-botao:hover {
+  border-color: #94a3b8;
+}
+
+.dashboard .dashboard-mes-botao.aberto {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+.dashboard .dashboard-mes-botao svg {
+  flex-shrink: 0;
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+
+.dashboard .dashboard-mes-botao .mes-seta-aberta {
+  transform: rotate(180deg);
+}
+
+/* ==========================================
+   JANELA DO CALENDÁRIO
+========================================== */
+
+.dashboard .dashboard-calendario {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  width: 100%;
+  min-width: 270px;
+  max-width: 320px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 10px 25px rgba(15, 23, 42, 0.10),
+    0 3px 8px rgba(15, 23, 42, 0.04);
+}
+
+.dashboard .dashboard-calendario-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.dashboard .dashboard-calendario-topo strong {
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dashboard .dashboard-calendario-topo span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.dashboard .dashboard-calendario-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dashboard .dashboard-mes-opcao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 39px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.dashboard .dashboard-mes-opcao:hover {
+  background: #e2e8f0;
+}
+
+.dashboard .dashboard-mes-opcao.selecionado {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.dashboard .dashboard-meses-todos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 39px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dashboard .dashboard-meses-todos:hover {
+  background: #f8fafc;
+}
+
+.dashboard .dashboard-meses-todos.selecionado {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* ==========================================
+   BOTÃO LIMPAR FILTROS
+========================================== */
+
+.dashboard .dashboard-limpar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dashboard .dashboard-limpar:hover {
+  background: #e2e8f0;
+}
+
+/* ==========================================
+   GRADE DOS SEIS INDICADORES
+========================================== */
+
+.dashboard .dashboard-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+/* Mantém os seis cards na mesma grade */
+
+.dashboard .dashboard-resumo,
+.dashboard .indicadores {
+  display: contents;
+}
+
+/* ==========================================
+   PADRÃO GERAL DOS SEIS CARDS
+========================================== */
+
+.dashboard .dashboard-resumo-card,
+.dashboard .card-indicador {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  min-height: 132px;
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-top: 3px solid #94a3b8;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+/* ==========================================
+   CARDS DE RESUMO
+========================================== */
+
+/*
+  Total de Chamados e Em Aberto utilizam
+  estrutura interna diferente dos demais
+  cards, portanto ajustamos o alinhamento.
+*/
+
+.dashboard .dashboard-resumo-card {
+  position: relative;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.dashboard .dashboard-resumo-card > div:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard .dashboard-resumo-card span {
+  display: block;
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.dashboard .dashboard-resumo-card strong {
+  display: block;
+  margin: 0;
+  color: #0f172a;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dashboard .dashboard-resumo-card small {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.dashboard .dashboard-resumo-icone,
+.dashboard .indicador-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.dashboard .dashboard-resumo-icone svg,
+.dashboard .indicador-icone svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.8;
+}
+
+.dashboard .dashboard-resumo-icone {
+  align-self: flex-start;
+}
+
+/* Total de Chamados - neutro */
+
+.dashboard .resumo-total {
+  border-top-color: #64748b;
+  background: #ffffff;
+}
+
+.dashboard .resumo-total .dashboard-resumo-icone {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Em Aberto - cinza azulado */
+
+.dashboard .resumo-abertos {
+  border-top-color: #64748b;
+  background: #f4f6fa;
+}
+
+.dashboard .resumo-abertos .dashboard-resumo-icone {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ==========================================
+   CARDS POR STATUS
+========================================== */
+
+.dashboard .card-indicador {
+  gap: 8px;
+}
+
+.dashboard .indicador-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard .indicador-titulo {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.dashboard .indicador-quantidade {
+  display: block;
+  margin: 0;
+  color: #0f172a;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dashboard .indicador-descricao {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* ==========================================
+   CORES DISCRETAS DOS STATUS
+========================================== */
+
+/* Novos - azul claro */
+
+.dashboard .card-indicador.card-azul {
+  border-top-color: #3b82f6;
+  background: #f8fbff;
+}
+
+.dashboard .card-azul .indicador-icone {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* Aguardando Retorno do Cliente - verde claro */
+
+.dashboard .card-indicador.card-verde-claro {
+  border-top-color: #22c55e;
+  background: #f7fdf9;
+}
+
+.dashboard .card-verde-claro .indicador-icone {
+  background: #eaf8ef;
+  color: #15803d;
+}
+
+/* Encaminhados para DEV / Produto - amarelo claro */
+
+.dashboard .card-indicador.card-amarelo {
+  border-top-color: #eab308;
+  background: #fffdf5;
+}
+
+.dashboard .card-amarelo .indicador-icone {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+/* Fechados - verde suave */
+
+.dashboard .card-indicador.card-verde {
+  border-top-color: #16a34a;
+  background: #f3fbf5;
+}
+
+.dashboard .card-verde .indicador-icone {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Compatibilidade com a cor cinza */
+
+.dashboard .card-indicador.card-cinza {
+  border-top-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.dashboard .card-cinza .indicador-icone {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ==========================================
+   TABELA DE CHAMADOS
+========================================== */
+
+.dashboard .secao-chamados {
+  margin-top: 0;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.dashboard .dashboard-tabela-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dashboard .dashboard-tabela-topo h2 {
+  margin: 0 0 5px;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dashboard .dashboard-tabela-topo p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.dashboard .dashboard-ver-todos {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dashboard .dashboard-ver-todos:hover {
+  text-decoration: underline;
+}
+
+.dashboard .tabela-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.dashboard .dashboard-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.dashboard .dashboard-tabela th,
+.dashboard .dashboard-tabela td {
+  padding: 13px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.dashboard .dashboard-tabela th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+}
+
+.dashboard .dashboard-tabela td {
+  color: #334155;
+}
+
+.dashboard .dashboard-tabela tbody tr:hover {
+  background: #f8fafc;
+}
+
+.dashboard .link-protocolo {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dashboard .link-protocolo:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================
+   PRIORIDADES
+========================================== */
+
+.dashboard .dashboard-prioridade,
+.dashboard .dashboard-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.dashboard .prioridade-baixo {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.dashboard .prioridade-normal {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.dashboard .prioridade-alto {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ==========================================
+   STATUS DOS CHAMADOS
+========================================== */
+
+.dashboard .status-novo {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.dashboard .status-aguardando {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.dashboard .status-dev,
+.dashboard .status-produto {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.dashboard .status-fechado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ==========================================
+   ESTADO VAZIO
+========================================== */
+
+.dashboard .sem-dados {
+  padding: 24px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* ==========================================
+   ACESSIBILIDADE
+========================================== */
+
+.dashboard button:focus-visible,
+.dashboard a:focus-visible,
+.dashboard select:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+/* ==========================================
+   RESPONSIVIDADE
+========================================== */
+
+@media (max-width: 1024px) {
+  .dashboard .dashboard-filtros-campos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard .dashboard-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard .dashboard-resumo-card,
+  .dashboard .card-indicador {
+    min-height: 124px;
+  }
+}
+
+@media (max-width: 768px) {
+  .conteudo.dashboard {
+    padding: 0 16px;
+  }
+
+  .dashboard .dashboard-topo,
+  .dashboard .dashboard-tabela-topo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard .dashboard-filtros-campos {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard .dashboard-resumo-card,
+  .dashboard .card-indicador {
+    padding: 16px;
+  }
+
+  .dashboard .dashboard-tabela {
+    min-width: 850px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard .dashboard-grade {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard .dashboard-novo-chamado {
+    width: 100%;
+  }
+
+  .dashboard .dashboard-calendario {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
