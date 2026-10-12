@@ -9,7 +9,7 @@ export default defineConfig({
       injectRegister: 'script',
       registerType: 'prompt',
       manifestFilename: 'manifest.json',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'notificacoes-sw.js'],
       manifest: {
         id: '/',
         name: 'HelpDesk PWA',
@@ -32,6 +32,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ['/notificacoes-sw.js'],
         globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,

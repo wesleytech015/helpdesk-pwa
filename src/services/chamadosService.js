@@ -1,5 +1,6 @@
 import { CATEGORIAS, PRIORIDADES, STATUS_CHAMADO } from "../constants/chamados.js";
 import * as chamadosDados from "./chamadosDados.js";
+import { exibirNotificacao } from "./notificacoesService.js";
 
 export async function listarChamados() {
   return chamadosDados.listarChamados();
@@ -69,7 +70,10 @@ export async function atualizarChamado(id, dados) {
 
   atualizado.dataAtualizacao = new Date().toISOString();
 
-  return chamadosDados.atualizarChamado(atualizado);
+  const salvo = await chamadosDados.atualizarChamado(atualizado);
+  const titulo = salvo.status === "Fechado" ? "Chamado fechado" : "Chamado atualizado";
+  await exibirNotificacao(titulo, `${salvo.titulo} (${salvo.status})`, salvo.id);
+  return salvo;
 }
 
 export async function fecharChamado(id) {
@@ -101,7 +105,9 @@ export async function criarChamado(dados) {
     dataAtualizacao: instante,
   };
 
-  return chamadosDados.salvarChamado(chamado);
+  const salvo = await chamadosDados.salvarChamado(chamado);
+  await exibirNotificacao("Chamado criado", salvo.titulo, salvo.id);
+  return salvo;
 }
 
 export function validarChamado(dados) {
