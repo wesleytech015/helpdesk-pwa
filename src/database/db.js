@@ -1,33 +1,30 @@
 
 /**
- * Módulo responsável pelo banco de dados local do HelpDesk PWA.
+ * Banco de dados local do HelpDesk PWA.
  *
- * Utiliza a API IndexedDB do navegador para armazenar chamados.
+ * Utiliza IndexedDB para persistência dos chamados.
+ * Aceita identificadores UUID em texto e IDs numéricos
+ * legados, sem exigir autoIncrement.
  */
 
-// Importa a função de validação do modelo de chamados.
 import { validarChamado } from "./chamado.model.js";
 
-// Nome do banco de dados.
 const DB_NAME = "helpdesk-pwa";
-
-// Versão da estrutura do banco.
-const DB_VERSION = 1;
-
-// Nome do armazenamento de chamados.
+const DB_VERSION = 2;
 const STORE_NAME = "chamados";
 
 /**
- * Abre o banco de dados e cria sua estrutura inicial.
+ * Abre o banco e prepara a estrutura.
  *
- * @returns {Promise<IDBDatabase>}
+ * A versão 2 permite alterar a chave primária
+ * para aceitar UUIDs e IDs numéricos.
+ *
+ * Atenção: a migração preserva os registros existentes.
  */
 export function abrirBanco() {
   return new Promise((resolve, reject) => {
-    if (!("indexedDB" in window)) {
-      reject(
-        new Error("IndexedDB não é suportado neste navegador.")
-      );
+    if (!globalThis.indexedDB) {
+      reject(new Error("IndexedDB não é suportado neste navegador."));
       return;
     }
 
@@ -35,11 +32,47 @@ export function abrirBanco() {
 
     requisicao.onupgradeneeded = (evento) => {
       const banco = evento.target.result;
+      const transacao = evento.target.transaction;
 
-      if (!banco.objectStoreNames.contains(STORE_NAME)) {
-        const store = banco.createObjectStore(STORE_NAME, {
+      let store;
+
+      if (banco.objectStoreNames.contains(STORE_NAME)) {
+        store = transacao.objectStore(STORE_NAME);
+
+        // Se a chave anterior era autoIncrement, é necessário
+        // recriar o armazenamento para remover essa propriedade.
+        if (store.autoIncrement || store.keyPath !== "id") {
+          const leitura = store.getAll();
+
+          leitura.onsuccess = () => {
+            const registros = leitura.result;
+
+            banco.deleteObjectStore(STORE_NAME);
+
+            const novoStore = banco.createObjectStore(STORE_NAME, {
+              keyPath: "id",
+            });
+
+            novoStore.createIndex("status", "status", {
+              unique: false,
+            });
+
+            novoStore.createIndex("prioridade", "prioridade", {
+              unique: false,
+            });
+
+            novoStore.createIndex("dataCriacao", "dataCriacao", {
+              unique: false,
+            });
+
+            for (const registro of registros) {
+              novoStore.put(registro);
+            }
+          };
+        }
+      } else {
+        store = banco.createObjectStore(STORE_NAME, {
           keyPath: "id",
-          autoIncrement: true,
         });
 
         store.createIndex("status", "status", {
@@ -59,10 +92,7 @@ export function abrirBanco() {
     requisicao.onsuccess = () => {
       const banco = requisicao.result;
 
-      // Fecha conexões antigas caso a estrutura precise ser atualizada.
-      banco.onversionchange = () => {
-        banco.close();
-      };
+      banco.onversionchange = () => banco.close();
 
       resolve(banco);
     };
@@ -75,72 +105,194 @@ export function abrirBanco() {
     };
 
     requisicao.onblocked = () => {
-      console.warn(
-        "A abertura do banco está bloqueada por outra conexão."
+      console.warn("A abertura do banco está bloqueada por outra conexão.");
+    };
+  });
+}
+
+/**
+ * Executa uma operação IndexedDB e fecha a conexão.
+ *
+ * @param {string} modo
+ * @param {(store: IDBObjectStore, transacao: IDBTransaction) => void} operacao
+ * @returns {Promise<unknown>}
+ */
+async function executarOperacao(modo, operacao) {
+  const banco = await abrirBanco();
+
+  return new Promise((resolve, reject) => {
+    const transacao = banco.transaction(STORE_NAME, modo);
+    const store = transacao.objectStore(STORE_NAME);
+
+    let resultado;
+    let erroOperacao;
+
+    try {
+      operacao(store, transacao, (valor) => {
+        resultado = valor;
+      });
+    } catch (erro) {
+      erroOperacao = erro;
+
+      try {
+        transacao.abort();
+      } catch {
+        banco.close();
+        reject(erro);
+      }
+    }
+
+    transacao.oncomplete = () => {
+      banco.close();
+
+      if (erroOperacao) {
+        reject(erroOperacao);
+      } else {
+        resolve(resultado);
+      }
+    };
+
+    transacao.onerror = () => {
+      banco.close();
+      reject(
+        erroOperacao ??
+          transacao.error ??
+          new Error("A operação no banco de dados falhou.")
+      );
+    };
+
+    transacao.onabort = () => {
+      banco.close();
+      reject(
+        erroOperacao ??
+          transacao.error ??
+          new Error("A operação no banco de dados foi cancelada.")
       );
     };
   });
 }
 
 /**
- * Adiciona um chamado ao banco de dados.
+ * Inclui um chamado.
  *
- * @param {Object} chamado - Dados do chamado.
- * @returns {Promise<number>} ID gerado pelo IndexedDB.
+ * @param {Object} chamado
+ * @returns {Promise<string|number>} ID do registro.
  */
 export async function adicionarChamado(chamado) {
-  // Valida os dados antes de iniciar a gravação.
-  const resultado = validarChamado(chamado);
+  if (!chamado || typeof chamado !== "object" || Array.isArray(chamado)) {
+    throw new Error("Os dados do chamado são inválidos.");
+  }
+
+  const registro = { ...chamado };
+
+  if (
+    (typeof registro.id !== "string" && typeof registro.id !== "number") ||
+    String(registro.id).trim() === ""
+  ) {
+    throw new Error("O identificador do chamado é obrigatório.");
+  }
+
+  const resultado = validarChamado(registro);
 
   if (!resultado.valido) {
     throw new Error(resultado.erros.join(" "));
   }
 
-  const banco = await abrirBanco();
+  return executarOperacao("readwrite", (store, transacao, definirResultado) => {
+    const requisicao = store.add(registro);
 
-  return new Promise((resolve, reject) => {
-    let idGerado;
-
-    const transacao = banco.transaction(
-      STORE_NAME,
-      "readwrite"
-    );
-
-    const store = transacao.objectStore(STORE_NAME);
-    const requisicao = store.add(chamado);
-
-    requisicao.onsuccess = () => {
-      idGerado = requisicao.result;
-    };
+    requisicao.onsuccess = () => definirResultado(requisicao.result);
 
     requisicao.onerror = () => {
-      reject(
-        requisicao.error ??
-          new Error("Não foi possível adicionar o chamado.")
-      );
+      // O erro será tratado pela transação.
     };
+  });
+}
 
-    transacao.oncomplete = () => {
-      banco.close();
-      resolve(idGerado);
+/**
+ * Lista todos os chamados.
+ *
+ * @returns {Promise<Object[]>}
+ */
+export async function listarChamados() {
+  return executarOperacao("readonly", (store, transacao, definirResultado) => {
+    const requisicao = store.getAll();
+
+    requisicao.onsuccess = () => definirResultado(requisicao.result);
+  });
+}
+
+/**
+ * Busca um chamado por ID.
+ *
+ * @param {string|number} id
+ * @returns {Promise<Object|undefined>}
+ */
+export async function buscarChamadoPorId(id) {
+  return executarOperacao("readonly", (store, transacao, definirResultado) => {
+    const requisicao = store.get(id);
+
+    requisicao.onsuccess = () => definirResultado(requisicao.result);
+  });
+}
+
+/**
+ * Atualiza um chamado existente, preservando a data de criação.
+ *
+ * @param {string|number} id
+ * @param {Object} dados
+ * @returns {Promise<Object>}
+ */
+export async function atualizarChamado(id, dados) {
+  return executarOperacao("readwrite", (store, transacao, definirResultado) => {
+    const requisicao = store.get(id);
+
+    requisicao.onsuccess = () => {
+      const atual = requisicao.result;
+
+      if (!atual) {
+        try {
+          transacao.abort();
+        } catch {
+          // A transação já pode estar finalizada.
+        }
+        return;
+      }
+
+      const atualizado = {
+        ...atual,
+        ...dados,
+        id,
+        dataCriacao: atual.dataCriacao,
+        dataAtualizacao: new Date().toISOString(),
+      };
+
+      const resultado = validarChamado(atualizado);
+
+      if (!resultado.valido) {
+        try {
+          transacao.abort();
+        } catch {
+          // A transação já pode estar finalizada.
+        }
+        return;
+      }
+
+      const gravacao = store.put(atualizado);
+
+      gravacao.onsuccess = () => definirResultado(atualizado);
     };
+  });
+}
 
-    transacao.onerror = () => {
-      banco.close();
-
-      reject(
-        transacao.error ??
-          new Error("A transação de inclusão falhou.")
-      );
-    };
-
-    transacao.onabort = () => {
-      banco.close();
-
-      reject(
-        transacao.error ??
-          new Error("A inclusão do chamado foi cancelada.")
-      );
-    };
+/**
+ * Exclui um chamado por ID.
+ *
+ * @param {string|number} id
+ * @returns {Promise<void>}
+ */
+export async function excluirChamado(id) {
+  return executarOperacao("readwrite", (store) => {
+    store.delete(id);
   });
 }
