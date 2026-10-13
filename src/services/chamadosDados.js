@@ -21,8 +21,10 @@ export async function salvarChamado(chamado) {
   if (await banco.buscarChamadoPorId(registro.id)) {
     throw new Error("Já existe um chamado com esse identificador.");
   }
-  await banco.adicionarChamado(registro);
-  return registro;
+  const salvo = await banco.adicionarChamado(registro);
+  // O banco novo retorna o registro; o atual retorna apenas o ID.
+  if (salvo && typeof salvo === "object") return salvo;
+  return banco.buscarChamadoPorId(registro.id);
 }
 
 export async function listarChamados() {
@@ -46,5 +48,16 @@ export async function atualizarChamado(chamado) {
   if (!atual) {
     throw new Error("Chamado não encontrado.");
   }
-  return banco.atualizarChamado(atual.id, structuredClone(chamado));
+  const atualizado = {
+    ...atual,
+    ...structuredClone(chamado),
+    id: atual.id,
+    dataCriacao: atual.dataCriacao,
+  };
+  if (Object.hasOwn(atual, "numero")) {
+    atualizado.numero = atual.numero;
+  } else {
+    delete atualizado.numero;
+  }
+  return banco.atualizarChamado(atual.id, atualizado);
 }

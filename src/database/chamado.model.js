@@ -1,34 +1,17 @@
 
-import { PRIORIDADES, STATUS_CHAMADO as statusPermitidos } from "../constants/chamados.js";
+import {
+  CATEGORIAS,
+  PRIORIDADES,
+  STATUS_CHAMADO,
+} from "../constants/chamados.js";
 
 /**
  * Modelo de dados dos chamados do HelpDesk PWA.
  *
- * Centraliza a estrutura e as validações básicas
- * dos registros armazenados no IndexedDB.
+ * Centraliza a estrutura e as validações dos registros
+ * armazenados no IndexedDB.
  */
 
-export const STATUS_CHAMADO = Object.freeze({
-  NOVO: "Novo",
-  AGUARDANDO_ATENDIMENTO: "Aguardando Atendimento",
-  AGUARDANDO_CLIENTE: "Aguardando Retorno do Cliente",
-  DEV: "Encaminhado para o DEV",
-  PRODUTO: "Encaminhado para Equipe de Produto",
-  FECHADO: "Fechado",
-});
-
-export const PRIORIDADE_CHAMADO = Object.freeze({
-  BAIXA: "Baixo",
-  NORMAL: "Normal",
-  ALTA: "Alto",
-});
-
-/**
- * Cria a estrutura inicial de um chamado.
- *
- * @param {Object} dados
- * @returns {Object}
- */
 export function criarModeloChamado(dados = {}) {
   const agora = new Date().toISOString();
 
@@ -37,8 +20,9 @@ export function criarModeloChamado(dados = {}) {
     titulo: dados.titulo?.trim() ?? "",
     descricao: dados.descricao?.trim() ?? "",
     categoria: dados.categoria?.trim() ?? "",
-    prioridade: dados.prioridade ?? PRIORIDADE_CHAMADO.NORMAL,
-    status: dados.status ?? STATUS_CHAMADO.NOVO,
+    prioridade: dados.prioridade ?? "Normal",
+    status: dados.status ?? "Novo",
+    responsavelId: dados.responsavelId ?? "nao-atribuido",
     cliente: dados.cliente?.trim() ?? "",
     usuario: dados.usuario?.trim() ?? "",
     dataCriacao: dados.dataCriacao ?? agora,
@@ -67,26 +51,31 @@ export function validarChamado(chamado) {
     erros.push("O título é obrigatório.");
   }
 
-  if (
-    typeof chamado.descricao !== "string" ||
-    !chamado.descricao.trim()
-  ) {
+  if (typeof chamado.descricao !== "string" || !chamado.descricao.trim()) {
     erros.push("A descrição é obrigatória.");
   }
 
   if (
     typeof chamado.categoria !== "string" ||
-    !chamado.categoria.trim()
+    !CATEGORIAS.includes(chamado.categoria)
   ) {
-    erros.push("A categoria é obrigatória.");
+    erros.push("A categoria informada é inválida.");
   }
 
   if (!PRIORIDADES.includes(chamado.prioridade)) {
     erros.push("A prioridade informada é inválida.");
   }
 
-  if (!statusPermitidos.includes(chamado.status)) {
+  if (!STATUS_CHAMADO.includes(chamado.status)) {
     erros.push("O status informado é inválido.");
+  }
+
+  if (
+    chamado.responsavelId !== undefined &&
+    (typeof chamado.responsavelId !== "string" ||
+      !chamado.responsavelId.trim())
+  ) {
+    erros.push("O identificador do responsável é inválido.");
   }
 
   return {
@@ -94,4 +83,3 @@ export function validarChamado(chamado) {
     erros,
   };
 }
-
