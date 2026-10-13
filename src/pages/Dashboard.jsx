@@ -119,8 +119,7 @@ export default function Dashboard() {
 
   const [chamados, setChamados] = useState([]);
   const [carregando, setCarregando] = useState(true);
-  const [erroCarregamento, setErroCarregamento] =
-    useState("");
+  const [erroCarregamento, setErroCarregamento] = useState("");
 
   // ========================================
   // ESTADOS DOS FILTROS
@@ -342,7 +341,6 @@ export default function Dashboard() {
 
   return (
     <main className="conteudo dashboard">
-
       {/* CABEÇALHO */}
 
       <div className="dashboard-topo">
@@ -377,7 +375,6 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard-filtros-campos">
-
           {/* FILTRO DE MÊS */}
 
           <div
@@ -586,7 +583,6 @@ export default function Dashboard() {
       ======================================== */}
 
       <div className="dashboard-grade">
-
         {/* INDICADORES GERAIS */}
 
         <section
@@ -738,7 +734,7 @@ export default function Dashboard() {
                         to={`/chamados/${chamado.id}`}
                         className="link-protocolo"
                       >
-                        {chamado.id}
+                        {chamado.numero || chamado.id}
                       </Link>
                     </td>
 

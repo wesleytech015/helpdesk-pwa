@@ -187,6 +187,9 @@ export default function NovoChamado() {
 
               {tipoMensagem === "sucesso" && chamadoCriado && (
                 <p>
+                  <strong>Número do chamado: </strong>
+                  {chamadoCriado.numero || "Não disponível"}
+                  {" — "}
                   <Link
                     to={`/chamados/${chamadoCriado.id}`}
                     className="link-protocolo"

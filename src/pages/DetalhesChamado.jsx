@@ -109,7 +109,7 @@ export default function DetalhesChamado() {
     setErro("");
   }
 
-  // Salva as alterações utilizando o serviço do Marcos.
+  // Salva as alterações utilizando o serviço do Marcus.
   async function salvarAlteracoes(evento) {
     evento.preventDefault();
 
@@ -131,6 +131,7 @@ export default function DetalhesChamado() {
 
     try {
       // Enviamos somente os campos permitidos pelo serviço.
+      // O UUID e o número do chamado não são editáveis.
       const dadosAtualizados = {
         titulo: formulario.titulo.trim(),
         descricao: formulario.descricao.trim(),
@@ -237,7 +238,7 @@ export default function DetalhesChamado() {
       <div className="detalhes-titulo">
         <div>
           <h1>
-            {chamado.id} - {chamado.titulo}
+            {chamado.numero || chamado.id} - {chamado.titulo}
           </h1>
 
           <p className="subtitulo">
