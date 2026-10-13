@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
 import {
   Search,
   Users,
@@ -196,7 +195,6 @@ export default function Triagem() {
     );
 
     setStatusPendente(chamado.status);
-
     setMensagem("");
     setErroSalvamento("");
   }
@@ -341,9 +339,11 @@ export default function Triagem() {
 
         if (registroAtual) {
           setChamadoSelecionado(registroAtual);
+
           setResponsavelPendente(
             obterResponsavel(registroAtual)
           );
+
           setStatusPendente(
             registroAtual.status
           );
@@ -368,9 +368,14 @@ export default function Triagem() {
 
   const chamadosFiltrados = chamados.filter(
     (chamado) => {
-      const texto = `${chamado.id} ${
-        chamado.titulo
-      }`.toLowerCase();
+      // Pesquisa pelo número do chamado, título ou UUID interno.
+      const texto = [
+        chamado.numero ?? "",
+        chamado.titulo ?? "",
+        chamado.id ?? "",
+      ]
+        .join(" ")
+        .toLowerCase();
 
       const correspondePesquisa = texto.includes(
         pesquisa.trim().toLowerCase()
@@ -627,12 +632,14 @@ export default function Triagem() {
                       onClick={() =>
                         abrirTriagem(chamado)
                       }
-                      aria-label={`Abrir triagem do chamado ${chamado.id}: ${chamado.titulo}`}
+                      aria-label={`Abrir triagem do chamado ${
+                        chamado.numero || chamado.id
+                      }: ${chamado.titulo}`}
                     >
-                      {/* PROTOCOLO */}
+                      {/* NÚMERO DO CHAMADO */}
 
                       <span className="kanban-protocolo">
-                        {chamado.id}
+                        {chamado.numero || chamado.id}
                       </span>
 
                       {/* TÍTULO */}
@@ -717,7 +724,8 @@ export default function Triagem() {
             <div className="triagem-painel-topo">
               <div>
                 <span className="triagem-painel-protocolo">
-                  {chamadoSelecionado.id}
+                  {chamadoSelecionado.numero ||
+                    chamadoSelecionado.id}
                 </span>
 
                 <h2 id="triagem-painel-titulo">

@@ -69,10 +69,15 @@ export default function Chamados() {
     };
   }, []);
 
-  // Filtra os chamados retornados pelo serviço
+  // Filtra pelo número do chamado, título ou UUID interno
   const chamadosFiltrados = chamados.filter((chamado) => {
-    const texto =
-      `${chamado.id ?? ""} ${chamado.titulo ?? ""}`.toLowerCase();
+    const texto = [
+      chamado.numero ?? "",
+      chamado.titulo ?? "",
+      chamado.id ?? "",
+    ]
+      .join(" ")
+      .toLowerCase();
 
     return (
       texto.includes(pesquisa.toLowerCase().trim()) &&
@@ -243,7 +248,7 @@ export default function Chamados() {
                         to={`/chamados/${chamado.id}`}
                         className="link-protocolo"
                       >
-                        {chamado.id}
+                        {chamado.numero || chamado.id}
                       </Link>
                     </td>
 
