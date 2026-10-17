@@ -2,6 +2,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { criarChamado } from "../services/chamadosService";
+import {
+  obterPermissaoNotificacoes,
+  solicitarPermissaoNotificacoes,
+} from "../services/notificacoesService.js";
 import "../styles/novoChamado.css";
 
 const formularioInicial = {
@@ -17,6 +21,47 @@ export default function NovoChamado() {
   const [tipoMensagem, setTipoMensagem] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [chamadoCriado, setChamadoCriado] = useState(null);
+
+  // Controle da permissão de notificações
+  const [permissaoNotificacoes, setPermissaoNotificacoes] = useState(
+    obterPermissaoNotificacoes()
+  );
+  const [mensagemNotificacoes, setMensagemNotificacoes] = useState("");
+  const [ativandoNotificacoes, setAtivandoNotificacoes] = useState(false);
+
+  // Solicita autorização ao navegador
+  async function ativarNotificacoes() {
+    if (ativandoNotificacoes) return;
+
+    setAtivandoNotificacoes(true);
+    setMensagemNotificacoes("");
+
+    try {
+      const permissao = await solicitarPermissaoNotificacoes();
+
+      setPermissaoNotificacoes(permissao);
+
+      if (permissao === "granted") {
+        setMensagemNotificacoes(
+          "Notificações ativadas com sucesso! Você receberá avisos sobre os chamados."
+        );
+      } else if (permissao === "denied") {
+        setMensagemNotificacoes(
+          "As notificações estão bloqueadas. Altere a permissão nas configurações do navegador."
+        );
+      } else if (permissao === "indisponivel") {
+        setMensagemNotificacoes(
+          "As notificações não estão disponíveis neste navegador."
+        );
+      } else {
+        setMensagemNotificacoes(
+          "A permissão não foi concedida. Você pode tentar novamente."
+        );
+      }
+    } finally {
+      setAtivandoNotificacoes(false);
+    }
+  }
 
   function atualizarCampo(evento) {
     const { name, value } = evento.target;
@@ -68,6 +113,9 @@ export default function NovoChamado() {
         "Chamado cadastrado com sucesso! O registro foi salvo no banco de dados local."
       );
       setTipoMensagem("sucesso");
+
+      // O serviço de chamados já dispara a notificação.
+      // Não é necessário chamar exibirNotificacao() aqui.
     } catch (erro) {
       setMensagem(
         erro instanceof Error
@@ -179,6 +227,37 @@ export default function NovoChamado() {
             Status inicial: <strong>Novo</strong>
           </p>
 
+          {/* Ativação de notificações */}
+          <div className="configuracao-notificacoes">
+            {permissaoNotificacoes === "granted" ? (
+              <p role="status">
+                🔔 Notificações ativadas
+              </p>
+            ) : (
+              <button
+                type="button"
+                className="botao-cancelar"
+                onClick={ativarNotificacoes}
+                disabled={
+                  ativandoNotificacoes ||
+                  permissaoNotificacoes === "indisponivel" ||
+                  permissaoNotificacoes === "denied"
+                }
+              >
+                {ativandoNotificacoes
+                  ? "Ativando..."
+                  : "🔔 Ativar notificações"}
+              </button>
+            )}
+
+            {mensagemNotificacoes && (
+              <p role="status" className="mensagem-formulario">
+                {mensagemNotificacoes}
+              </p>
+            )}
+          </div>
+
+          {/* Mensagem de cadastro */}
           {mensagem && (
             <div role={tipoMensagem === "erro" ? "alert" : "status"}>
               <p className="mensagem-formulario">

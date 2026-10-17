@@ -1,3 +1,4 @@
+/** Retorna default, granted, denied ou indisponivel. */
 export function obterPermissaoNotificacoes() {
   if (!globalThis.isSecureContext || !("Notification" in globalThis)) {
     return "indisponivel";
@@ -9,9 +10,15 @@ export function obterPermissaoNotificacoes() {
 export async function solicitarPermissaoNotificacoes() {
   const permissao = obterPermissaoNotificacoes();
   if (permissao !== "default") return permissao;
-  return Notification.requestPermission();
+  try {
+    return await Notification.requestPermission();
+  } catch {
+    // Se o navegador falhar, mantém a permissão atual.
+    return obterPermissaoNotificacoes();
+  }
 }
 
+/** Exibe um aviso local e retorna se o envio foi aceito pelo navegador. */
 export async function exibirNotificacao(titulo, mensagem, chamadoId) {
   if (obterPermissaoNotificacoes() !== "granted") return false;
 
