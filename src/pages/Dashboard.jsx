@@ -653,6 +653,14 @@ export default function Dashboard() {
                 tipo="novos"
               />
 
+              {/* NOVO INDICADOR */}
+              <CardIndicador
+                titulo="Aguardando Atendimento"
+                quantidade={contar("Aguardando Atendimento")}
+                cor="azul"
+                tipo="aguardando"
+              />
+
               <CardIndicador
                 titulo="Aguardando Retorno do Cliente"
                 quantidade={contar(
